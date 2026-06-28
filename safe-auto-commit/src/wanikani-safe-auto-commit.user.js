@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         WK Safe Auto Commit
+// @name         WaniKani Safe Auto Commit
 // @namespace    emerensolutions
 // @version      0.10.4
 // @description  Lightweight safe auto commit for WaniKani reviews and lessons

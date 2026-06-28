@@ -1,11 +1,11 @@
-# WK Safe Auto Commit
+# WaniKani Safe Auto Commit
 
 Lightweight safe auto-commit for WaniKani reviews and optional lesson quizzes.
 
 The installable userscript is:
 
 ```text
-src/wk-safe-auto-commit.user.js
+src/wanikani-safe-auto-commit.user.js
 ```
 
 Current imported version: `0.10.4`.
@@ -21,4 +21,3 @@ Current imported version: `0.10.4`.
 ## Safety Notes
 
 This script is intentionally conservative: it submits only when the normalized input matches known accepted answers. If required WaniKani page structure is missing, it disables itself and shows an update warning.
-
