@@ -16,7 +16,12 @@ Current imported version: `0.10.4`.
 - Auto-submits reading answers when the typed answer exactly matches an accepted reading.
 - Can auto-advance after correct answers.
 - Includes a session toggle button.
-- Uses WaniKani Open Framework settings when available.
+- Uses WaniKani Open Framework for persistent settings when available.
+
+## Requirements
+
+- A userscript manager such as Tampermonkey or Violentmonkey.
+- WaniKani Open Framework is recommended for settings and fallback subject lookup.
 
 ## Safety Notes
 

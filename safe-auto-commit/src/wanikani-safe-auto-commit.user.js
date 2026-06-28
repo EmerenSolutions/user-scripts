@@ -253,7 +253,7 @@
     failed = true;
     sessionEnabled = false;
 
-    console.error('[WK Safe Auto Commit]', reason, detail ?? '');
+    console.error('[WaniKani Safe Auto Commit]', reason, detail ?? '');
 
     if ($('#WK_SAFE_AUTOCOMMIT_FAILURE')) return;
 
@@ -280,7 +280,7 @@
     });
 
     const text = document.createElement('span');
-    text.textContent = 'WK Safe Auto Commit requires updating';
+    text.textContent = 'WaniKani Safe Auto Commit requires updating';
 
     const sub = document.createElement('span');
     sub.textContent = reason;
@@ -412,7 +412,7 @@
     expected = [...new Set(expected)];
 
     if (!expected.length) {
-      console.warn('[WK Safe Auto Commit] empty-expected', {
+      console.warn('[WaniKani Safe Auto Commit] empty-expected', {
         questionType,
         subjectId,
         characters,
@@ -507,7 +507,7 @@
     window.wkof.Menu.insert_script_link({
       name: MENU_LINK_NAME,
       submenu: 'Settings',
-      title: 'WK Safe Auto Commit',
+      title: 'WaniKani Safe Auto Commit',
       on_click: openSettings
     });
   };
@@ -581,7 +581,7 @@
 
     const dialog = new window.wkof.Settings({
       script_id: SCRIPT_ID,
-      title: 'WK Safe Auto Commit',
+      title: 'WaniKani Safe Auto Commit',
       on_save: saveSettings,
       content: {
         enabled: {
