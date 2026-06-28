@@ -373,7 +373,7 @@
     window.wkof.Menu.insert_script_link({
       name: MENU_LINK_NAME,
       submenu: 'Settings',
-      title: 'WaniKani Kanji Components',
+      title: 'Kanji Components',
       on_click: openSettings
     });
   };
@@ -403,7 +403,7 @@
 
     const dialog = new window.wkof.Settings({
       script_id: SCRIPT_ID,
-      title: 'WaniKani Kanji Components',
+      title: 'Kanji Components',
       on_save: saveSettings,
       content: {
         enabled: {
