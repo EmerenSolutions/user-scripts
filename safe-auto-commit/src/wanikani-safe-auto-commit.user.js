@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         WaniKani Safe Auto Commit
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.10.5
+// @version      0.10.6
 // @description  Lightweight safe auto commit for WaniKani reviews and lessons
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
 // @match        https://preview.wanikani.com/*
 // @grant        none
 // @run-at       document-idle
+// @downloadURL  https://raw.githubusercontent.com/EmerenSolutions/wanikani-userscripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js
+// @updateURL    https://raw.githubusercontent.com/EmerenSolutions/wanikani-userscripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js
 // ==/UserScript==
 
 (() => {

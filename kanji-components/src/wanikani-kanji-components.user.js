@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.2
+// @version      0.1.3
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
 // @match        https://preview.wanikani.com/*
 // @grant        none
 // @run-at       document-idle
+// @downloadURL  https://raw.githubusercontent.com/EmerenSolutions/wanikani-userscripts/main/kanji-components/src/wanikani-kanji-components.user.js
+// @updateURL    https://raw.githubusercontent.com/EmerenSolutions/wanikani-userscripts/main/kanji-components/src/wanikani-kanji-components.user.js
 // ==/UserScript==
 
 (() => {
