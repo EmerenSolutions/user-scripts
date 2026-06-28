@@ -1,0 +1,24 @@
+# WK Safe Auto Commit
+
+Lightweight safe auto-commit for WaniKani reviews and optional lesson quizzes.
+
+The installable userscript is:
+
+```text
+src/wk-safe-auto-commit.user.js
+```
+
+Current imported version: `0.10.4`.
+
+## Behavior
+
+- Auto-submits meaning answers when the typed answer exactly matches an accepted meaning or user synonym.
+- Auto-submits reading answers when the typed answer exactly matches an accepted reading.
+- Can auto-advance after correct answers.
+- Includes a session toggle button.
+- Uses WaniKani Open Framework settings when available.
+
+## Safety Notes
+
+This script is intentionally conservative: it submits only when the normalized input matches known accepted answers. If required WaniKani page structure is missing, it disables itself and shows an update warning.
+
