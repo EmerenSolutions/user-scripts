@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.0
+// @version      0.1.1
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emeren
 // @match        https://www.wanikani.com/*
@@ -14,16 +14,54 @@
   'use strict';
 
   const SCRIPT_ID = 'wanikani_kanji_components';
+  const MENU_LINK_NAME = `${SCRIPT_ID}_settings`;
+  const DEFAULT_SETTINGS = {
+    enabled: true,
+    runKanjiPages: true,
+    runReviews: true,
+    runLessons: true,
+    showNested: true
+  };
+  const SETTINGS_META = {
+    enabled: {
+      label: 'Enabled',
+      description: 'Master switch for the component panel.'
+    },
+    runKanjiPages: {
+      label: 'Kanji Pages',
+      description: 'Show components on individual WaniKani kanji pages.'
+    },
+    runReviews: {
+      label: 'Reviews',
+      description: 'Show components during WaniKani reviews.'
+    },
+    runLessons: {
+      label: 'Lessons',
+      description: 'Show components during WaniKani lessons and lesson quizzes.'
+    },
+    showNested: {
+      label: 'Nested Components',
+      description: 'Show kanji found inside direct components.'
+    }
+  };
   const COMPONENTS = __COMPONENTS_JSON__;
 
+  let settings = { ...DEFAULT_SETTINGS };
+  let settingsLoaded = false;
   let wkKanji = null;
   let latestCharacter = null;
+  let observerTimer = null;
 
   const $ = selector => document.querySelector(selector);
 
   const isKanji = value => /^[\u3400-\u9fff]$/u.test(value);
 
   const unique = values => [...new Set(values)];
+
+  const removePanel = () => {
+    $(`#${SCRIPT_ID}_panel`)?.remove();
+    latestCharacter = null;
+  };
 
   const readyWkof = async modules => {
     if (!window.wkof?.include || !window.wkof?.ready) return false;
@@ -55,6 +93,26 @@
 
     return wkKanji;
   };
+
+  const isKanjiPage = () =>
+    /^\/kanji\/[^/?#]+/u.test(decodeURIComponent(location.pathname));
+
+  const isReviewPage = () =>
+    location.pathname.startsWith('/subjects/review');
+
+  const isLessonPage = () =>
+    location.pathname.startsWith('/subject-lessons/')
+    || location.pathname.startsWith('/subjects/lesson')
+    || location.pathname.startsWith('/lesson')
+    || document.body?.classList.contains('lessons');
+
+  const shouldRunOnCurrentPage = () =>
+    settings.enabled
+    && (
+      (settings.runKanjiPages && isKanjiPage())
+      || (settings.runReviews && isReviewPage())
+      || (settings.runLessons && isLessonPage())
+    );
 
   const getDirectComponents = character =>
     unique(COMPONENTS[character] || []).filter(component => component !== character);
@@ -95,12 +153,16 @@
       '.subject-character__characters',
       '.character-header__characters',
       '.quiz-header__characters',
+      '.lesson-header__characters',
+      '.subject-slide__characters',
       '[data-quiz-target="characters"]',
+      '[data-subject-character]',
       '[class*="characters"]'
     ];
 
     for (const selector of selectors) {
-      const text = $(selector)?.textContent?.trim();
+      const element = $(selector);
+      const text = element?.dataset?.subjectCharacter || element?.textContent?.trim();
       if (isKanji(text)) return text;
     }
 
@@ -238,6 +300,11 @@
 
   const render = async character => {
     if (!character || !isKanji(character)) return;
+    if (!shouldRunOnCurrentPage()) {
+      removePanel();
+      return;
+    }
+
     if (character === latestCharacter && $(`#${SCRIPT_ID}_panel`)) return;
 
     latestCharacter = character;
@@ -262,7 +329,9 @@
 
     panel.appendChild(title);
     panel.appendChild(createRow('Direct', direct));
-    panel.appendChild(createRow('Nested', nested));
+    if (settings.showNested) {
+      panel.appendChild(createRow('Nested', nested));
+    }
 
     if (!allowed) {
       const note = document.createElement('p');
@@ -276,19 +345,142 @@
   };
 
   const renderCurrentPage = () => {
+    if (!shouldRunOnCurrentPage()) {
+      removePanel();
+      return;
+    }
+
     const character = getSubjectFromPage();
     if (character) render(character);
   };
 
+  const loadSettings = async () => {
+    if (!await readyWkof('Menu,Settings')) return;
+
+    await window.wkof.Settings.load(SCRIPT_ID, DEFAULT_SETTINGS);
+    settings = {
+      ...DEFAULT_SETTINGS,
+      ...(window.wkof.settings?.[SCRIPT_ID] || {})
+    };
+
+    settingsLoaded = true;
+    scheduleMenuInstall();
+  };
+
+  const installSettingsMenu = () => {
+    if (!window.wkof?.Menu?.insert_script_link) return;
+
+    window.wkof.Menu.insert_script_link({
+      name: MENU_LINK_NAME,
+      submenu: 'Settings',
+      title: 'WaniKani Kanji Components',
+      on_click: openSettings
+    });
+  };
+
+  const scheduleMenuInstall = () => {
+    installSettingsMenu();
+
+    [100, 500, 1500, 3000].forEach(delay => {
+      window.setTimeout(installSettingsMenu, delay);
+    });
+  };
+
+  const saveSettings = () => {
+    settings = {
+      ...DEFAULT_SETTINGS,
+      ...(window.wkof.settings?.[SCRIPT_ID] || {})
+    };
+
+    removePanel();
+    renderCurrentPage();
+
+    return window.wkof.Settings.save(SCRIPT_ID);
+  };
+
+  const openSettings = () => {
+    window.wkof.settings[SCRIPT_ID] = { ...settings };
+
+    const dialog = new window.wkof.Settings({
+      script_id: SCRIPT_ID,
+      title: 'WaniKani Kanji Components',
+      on_save: saveSettings,
+      content: {
+        enabled: {
+          type: 'checkbox',
+          label: SETTINGS_META.enabled.label,
+          default: DEFAULT_SETTINGS.enabled,
+          hover_tip: SETTINGS_META.enabled.description
+        },
+        runKanjiPages: {
+          type: 'checkbox',
+          label: SETTINGS_META.runKanjiPages.label,
+          default: DEFAULT_SETTINGS.runKanjiPages,
+          hover_tip: SETTINGS_META.runKanjiPages.description
+        },
+        runReviews: {
+          type: 'checkbox',
+          label: SETTINGS_META.runReviews.label,
+          default: DEFAULT_SETTINGS.runReviews,
+          hover_tip: SETTINGS_META.runReviews.description
+        },
+        runLessons: {
+          type: 'checkbox',
+          label: SETTINGS_META.runLessons.label,
+          default: DEFAULT_SETTINGS.runLessons,
+          hover_tip: SETTINGS_META.runLessons.description
+        },
+        showNested: {
+          type: 'checkbox',
+          label: SETTINGS_META.showNested.label,
+          default: DEFAULT_SETTINGS.showNested,
+          hover_tip: SETTINGS_META.showNested.description
+        }
+      }
+    });
+
+    dialog.open();
+  };
+
+  const startup = async () => {
+    await loadSettings();
+    document.addEventListener('turbo:load', () => {
+      scheduleMenuInstall();
+      renderCurrentPage();
+    });
+    document.addEventListener('turbo:render', () => {
+      scheduleMenuInstall();
+      renderCurrentPage();
+    });
+    window.addEventListener('popstate', () => window.setTimeout(renderCurrentPage, 50));
+    renderCurrentPage();
+    [500, 1500, 3000].forEach(delay => window.setTimeout(renderCurrentPage, delay));
+    [500, 1500, 3000].forEach(delay => {
+      window.setTimeout(async () => {
+        if (!settingsLoaded) {
+          await loadSettings();
+          renderCurrentPage();
+        }
+      }, delay);
+    });
+
+    const observer = new MutationObserver(() => {
+      window.clearTimeout(observerTimer);
+      observerTimer = window.setTimeout(renderCurrentPage, 100);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  };
+
   window.addEventListener('willShowNextQuestion', event => {
+    if (!settings.enabled || (!settings.runReviews && !settings.runLessons)) return;
+
     const character = getSubjectFromEvent(event);
     if (character) render(character);
   });
 
-  document.addEventListener('turbo:load', renderCurrentPage);
-  document.addEventListener('turbo:render', renderCurrentPage);
-  window.addEventListener('popstate', () => window.setTimeout(renderCurrentPage, 50));
-
-  renderCurrentPage();
-  [500, 1500, 3000].forEach(delay => window.setTimeout(renderCurrentPage, delay));
+  startup();
 })();
