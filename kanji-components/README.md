@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-kanji-components.user.js
 ```
 
-Current version: `0.1.3`.
+Current version: `0.1.4`.
 
 ## Behavior
 
@@ -16,6 +16,7 @@ Current version: `0.1.3`.
 - Runs in WaniKani lessons and lesson quizzes when enabled.
 - Shows direct visual components from a bundled decomposition map.
 - Shows nested components found inside those direct components.
+- Shows component forms when a kanji appears in a changed shape, such as `水 as 氵`.
 - Links displayed components to WaniKani kanji pages.
 - Uses WaniKani Open Framework to filter results to kanji that exist in WaniKani.
 - Adds a WaniKani script menu settings entry for enabling/disabling the script and each context.

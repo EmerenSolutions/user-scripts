@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.3
+// @version      0.1.4
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -116,25 +116,54 @@
       || (settings.runLessons && isLessonPage())
     );
 
+  const normalizeEntry = entry => {
+    if (typeof entry === 'string') {
+      return {
+        kanji: entry,
+        form: null
+      };
+    }
+
+    return {
+      kanji: entry?.kanji,
+      form: entry?.form || null
+    };
+  };
+
+  const uniqueComponents = components => {
+    const seen = new Set();
+    const result = [];
+
+    for (const component of components) {
+      if (!component.kanji || seen.has(component.kanji)) continue;
+
+      seen.add(component.kanji);
+      result.push(component);
+    }
+
+    return result;
+  };
+
   const getDirectComponents = character =>
-    unique(COMPONENTS[character] || []).filter(component => component !== character);
+    uniqueComponents((COMPONENTS[character] || []).map(normalizeEntry))
+      .filter(component => component.kanji !== character);
 
   const getNestedComponents = (character, seen = new Set()) => {
     const result = [];
 
     for (const component of getDirectComponents(character)) {
-      if (seen.has(component)) continue;
+      if (seen.has(component.kanji)) continue;
 
-      seen.add(component);
+      seen.add(component.kanji);
       result.push(component);
-      result.push(...getNestedComponents(component, seen));
+      result.push(...getNestedComponents(component.kanji, seen));
     }
 
-    return unique(result).filter(component => component !== character);
+    return uniqueComponents(result).filter(component => component.kanji !== character);
   };
 
   const filterToWkKanji = (components, allowed) =>
-    components.filter(component => allowed.has(component));
+    components.filter(component => allowed.has(component.kanji));
 
   const getSubjectFromEvent = event => {
     const detail = event?.detail;
@@ -183,9 +212,23 @@
   const createComponentLink = component => {
     const link = document.createElement('a');
     link.className = `${SCRIPT_ID}__link`;
-    link.href = `/kanji/${encodeURIComponent(component)}`;
-    link.textContent = component;
-    link.title = `Open ${component} on WaniKani`;
+    link.href = `/kanji/${encodeURIComponent(component.kanji)}`;
+    link.title = component.form
+      ? `Open ${component.kanji} on WaniKani. Visible form: ${component.form}`
+      : `Open ${component.kanji} on WaniKani`;
+
+    const kanji = document.createElement('span');
+    kanji.className = `${SCRIPT_ID}__kanji`;
+    kanji.textContent = component.kanji;
+    link.appendChild(kanji);
+
+    if (component.form) {
+      const alias = document.createElement('span');
+      alias.className = `${SCRIPT_ID}__alias`;
+      alias.textContent = `as ${component.form}`;
+      link.appendChild(alias);
+    }
+
     return link;
   };
 
@@ -266,15 +309,30 @@
         border: 1px solid rgba(0, 0, 0, 0.08);
         border-radius: 4px;
         color: #2f5f9f;
-        display: inline-flex;
+        display: inline-grid;
         font-size: 24px;
         font-weight: 600;
-        height: 32px;
+        gap: 2px;
         justify-content: center;
         line-height: 1;
-        min-width: 32px;
-        padding: 0 6px;
+        min-height: 32px;
+        min-width: 36px;
+        padding: 4px 7px;
         text-decoration: none;
+      }
+
+      .${SCRIPT_ID}__kanji {
+        display: block;
+      }
+
+      .${SCRIPT_ID}__alias {
+        color: inherit;
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        opacity: 0.7;
+        white-space: nowrap;
       }
 
       .${SCRIPT_ID}__link:hover {
@@ -316,7 +374,7 @@
     const direct = allowed ? filterToWkKanji(getDirectComponents(character), allowed) : [];
     const nested = allowed
       ? filterToWkKanji(getNestedComponents(character), allowed)
-        .filter(component => !direct.includes(component))
+        .filter(component => !direct.some(directComponent => directComponent.kanji === component.kanji))
       : [];
 
     $(`#${SCRIPT_ID}_panel`)?.remove();

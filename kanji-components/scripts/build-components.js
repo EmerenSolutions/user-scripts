@@ -46,11 +46,17 @@ const parseComponents = expression => {
   for (const part of match[1].split(',')) {
     const value = part.trim();
     if (isKanjiLike(value)) {
-      components.push(normalizeComponent.get(value) || value);
+      const normalized = normalizeComponent.get(value) || value;
+      components.push({
+        kanji: normalized,
+        form: value === normalized ? null : value
+      });
     }
   }
 
-  return [...new Set(components)];
+  return components.filter((component, index) =>
+    components.findIndex(candidate => candidate.kanji === component.kanji) === index
+  );
 };
 
 const direct = new Map();
@@ -66,7 +72,7 @@ for (const line of fs.readFileSync(sourcePath, 'utf8').split(/\r?\n/u)) {
   if (!isBmpHan(character)) continue;
 
   const components = parseComponents(trimmed.slice(separator + 1));
-  const filtered = components.filter(component => component !== character);
+  const filtered = components.filter(component => component.kanji !== character);
 
   if (filtered.length) {
     direct.set(character, filtered);
