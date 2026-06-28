@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.1
+// @version      0.1.2
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
-// @author       Johan Emeren
+// @author       Johan Emerén
 // @match        https://www.wanikani.com/*
 // @match        https://preview.wanikani.com/*
 // @grant        none
@@ -398,6 +398,49 @@
     return window.wkof.Settings.save(SCRIPT_ID);
   };
 
+  const enhanceSettingsDialog = () => {
+    const descriptions = Object.values(SETTINGS_META)
+      .reduce((result, item) => {
+        result[item.label] = item.description;
+        return result;
+      }, {});
+
+    const applyEnhancement = () => {
+      const labels = [...document.querySelectorAll('label')]
+        .filter(label => Object.hasOwn(descriptions, label.textContent.trim()));
+
+      labels.forEach(label => {
+        if (label.dataset.wanikaniKanjiComponentsEnhanced) return;
+
+        const title = label.textContent.trim();
+
+        label.dataset.wanikaniKanjiComponentsEnhanced = 'true';
+        label.innerHTML = [
+          `<strong style="display:block;font-weight:700;">${title}</strong>`,
+          `<span style="display:block;margin-top:2px;color:#666;font-size:12px;line-height:1.25;">${descriptions[title]}</span>`
+        ].join('');
+
+        Object.assign(label.style, {
+          display: 'inline-block',
+          minWidth: '250px',
+          textAlign: 'left',
+          verticalAlign: 'middle'
+        });
+
+        const row = label.closest('tr, .row, div');
+        if (row) {
+          Object.assign(row.style, {
+            minHeight: '44px'
+          });
+        }
+      });
+    };
+
+    [0, 50, 150, 300].forEach(delay => {
+      window.setTimeout(applyEnhancement, delay);
+    });
+  };
+
   const openSettings = () => {
     window.wkof.settings[SCRIPT_ID] = { ...settings };
 
@@ -440,6 +483,7 @@
     });
 
     dialog.open();
+    enhanceSettingsDialog();
   };
 
   const startup = async () => {

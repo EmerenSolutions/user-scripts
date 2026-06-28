@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-safe-auto-commit.user.js
 ```
 
-Current imported version: `0.10.4`.
+Current version: `0.10.5`.
 
 ## Behavior
 

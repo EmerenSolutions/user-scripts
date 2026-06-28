@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Safe Auto Commit
-// @namespace    emerensolutions
-// @version      0.10.4
+// @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
+// @version      0.10.5
 // @description  Lightweight safe auto commit for WaniKani reviews and lessons
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -13,7 +13,7 @@
 (() => {
   'use strict';
 
-  const SCRIPT_ID = 'wk_safe_auto_commit';
+  const SCRIPT_ID = 'wanikani_safe_auto_commit';
   const MENU_LINK_NAME = `${SCRIPT_ID}_settings`;
   const DEFAULT_SETTINGS = {
     enabled: true,
@@ -65,14 +65,14 @@
   let checkTimer = null;
   const subjectCache = new Map();
 
-  const DEBUG_FAILURE_TRIGGER = 'wksafeautocommit.debug.failure';
+  const DEBUG_FAILURE_TRIGGER = 'wanikanisafeautocommit.debug.failure';
 
   const $ = selector => document.querySelector(selector);
 
   const getInput = () => $('#user-response');
   const getButton = () => $('.quiz-input__submit-button');
   const getFooter = () => $('.quiz-footer');
-  const getToggleButton = () => $('#WK_SAFE_AUTOCOMMIT_TOGGLE');
+  const getToggleButton = () => $('#WANIKANI_SAFE_AUTOCOMMIT_TOGGLE');
 
   const isReviewPage = () =>
     location.pathname.startsWith('/subjects/review');
@@ -255,10 +255,10 @@
 
     console.error('[WaniKani Safe Auto Commit]', reason, detail ?? '');
 
-    if ($('#WK_SAFE_AUTOCOMMIT_FAILURE')) return;
+    if ($('#WANIKANI_SAFE_AUTOCOMMIT_FAILURE')) return;
 
     const banner = document.createElement('div');
-    banner.id = 'WK_SAFE_AUTOCOMMIT_FAILURE';
+    banner.id = 'WANIKANI_SAFE_AUTOCOMMIT_FAILURE';
 
     Object.assign(banner.style, {
       position: 'fixed',
@@ -428,14 +428,14 @@
       return;
     }
 
-    if ($('#WK_SAFE_AUTOCOMMIT_TOGGLE')) return;
+    if ($('#WANIKANI_SAFE_AUTOCOMMIT_TOGGLE')) return;
 
     const footer = getFooter();
     if (!footer) return;
 
     const button = document.createElement('button');
 
-    button.id = 'WK_SAFE_AUTOCOMMIT_TOGGLE';
+    button.id = 'WANIKANI_SAFE_AUTOCOMMIT_TOGGLE';
     button.type = 'button';
     button.title = 'Temporary. Save defaults in Settings.';
     button.textContent = 'Auto Commit: ON';
@@ -467,9 +467,9 @@
     const input = getInput();
     if (!input) return;
 
-    if (input.dataset.wkSafeAutoCommitBound) return;
+    if (input.dataset.wanikaniSafeAutoCommitBound) return;
 
-    input.dataset.wkSafeAutoCommitBound = 'true';
+    input.dataset.wanikaniSafeAutoCommitBound = 'true';
 
     input.addEventListener('compositionstart', () => {
       composing = true;
@@ -545,11 +545,11 @@
         .filter(label => Object.hasOwn(descriptions, label.textContent.trim()));
 
       labels.forEach(label => {
-        if (label.dataset.wkSafeAutoCommitEnhanced) return;
+        if (label.dataset.wanikaniSafeAutoCommitEnhanced) return;
 
         const title = label.textContent.trim();
 
-        label.dataset.wkSafeAutoCommitEnhanced = 'true';
+        label.dataset.wanikaniSafeAutoCommitEnhanced = 'true';
         label.innerHTML = [
           `<strong style="display:block;font-weight:700;">${title}</strong>`,
           `<span style="display:block;margin-top:2px;color:#666;font-size:12px;line-height:1.25;">${descriptions[title]}</span>`
