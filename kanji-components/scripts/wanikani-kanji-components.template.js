@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.4
+// @version      0.1.5
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -81,7 +81,13 @@
     }
 
     wkKanji = new Set();
-    const items = await window.wkof.ItemData.get_items();
+    const items = await window.wkof.ItemData.get_items({
+      wk_items: {
+        filters: {
+          item_type: 'kan'
+        }
+      }
+    });
 
     for (const item of items) {
       const data = item?.data || item;
