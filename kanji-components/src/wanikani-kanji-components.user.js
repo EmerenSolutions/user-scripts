@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.8
+// @version      0.1.9
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -103,16 +103,23 @@
   };
 
   const isKanjiPage = () =>
-    /^\/kanji\/[^/?#]+/u.test(decodeURIComponent(location.pathname));
+    /^(?:\/kanji\/|\/subjects\/kanji\/)[^/?#]+/u.test(decodeURIComponent(location.pathname));
 
   const isReviewPage = () =>
     location.pathname.startsWith('/subjects/review');
 
+  const isLessonPickerPage = () =>
+    location.pathname === '/lesson'
+    || document.querySelector('h1')?.textContent?.trim() === 'Lesson Picker';
+
   const isLessonPage = () =>
-    location.pathname.startsWith('/subject-lessons/')
-    || location.pathname.startsWith('/subjects/lesson')
-    || location.pathname.startsWith('/lesson')
-    || document.body?.classList.contains('lessons');
+    !isLessonPickerPage()
+    && (
+      location.pathname.startsWith('/subject-lessons/')
+      || location.pathname.startsWith('/subjects/lesson')
+      || location.pathname.startsWith('/lesson/session')
+      || document.body?.classList.contains('lessons')
+    );
 
   const shouldRunOnCurrentPage = () =>
     settings.enabled
