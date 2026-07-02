@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.7
+// @version      0.1.8
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -216,6 +216,28 @@
       '[data-subject-character]',
       '[class*="characters"]'
     ];
+
+    const candidates = [];
+
+    for (const selector of selectors) {
+      document.querySelectorAll(selector).forEach(element => {
+        if (element.closest(`#${SCRIPT_ID}_panel`)) return;
+
+        const rect = element.getBoundingClientRect();
+        const text = element?.dataset?.subjectCharacter || element?.textContent?.trim();
+
+        if (isKanji(text) && rect.width > 0 && rect.height > 0) {
+          candidates.push({
+            text,
+            area: rect.width * rect.height,
+            top: rect.top
+          });
+        }
+      });
+    }
+
+    candidates.sort((a, b) => b.area - a.area || a.top - b.top);
+    if (candidates.length) return candidates[0].text;
 
     for (const selector of selectors) {
       const element = $(selector);
