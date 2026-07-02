@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.6
+// @version      0.1.7
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -170,6 +170,26 @@
 
   const filterToWkKanji = (components, allowed) =>
     components.filter(component => allowed.has(component.kanji));
+
+  const getDisplayDirectComponents = (character, allowed) => {
+    const result = [];
+
+    const collectDisplayable = (component, seen = new Set()) => {
+      if (!component.kanji || component.kanji === character || seen.has(component.kanji)) return;
+      seen.add(component.kanji);
+
+      if (allowed.has(component.kanji)) {
+        result.push(component);
+        return;
+      }
+
+      getDirectComponents(component.kanji)
+        .forEach(child => collectDisplayable(child, seen));
+    };
+
+    getDirectComponents(character).forEach(component => collectDisplayable(component));
+    return uniqueComponents(result);
+  };
 
   const getSubjectFromEvent = event => {
     const detail = event?.detail;
@@ -377,7 +397,7 @@
     installStyles();
 
     const allowed = await loadWkKanji();
-    const direct = allowed ? filterToWkKanji(getDirectComponents(character), allowed) : [];
+    const direct = allowed ? getDisplayDirectComponents(character, allowed) : [];
     const nested = allowed
       ? filterToWkKanji(getNestedComponents(character), allowed)
         .filter(component => !direct.some(directComponent => directComponent.kanji === component.kanji))
