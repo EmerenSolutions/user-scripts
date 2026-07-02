@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.5
+// @version      0.1.6
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -183,7 +183,7 @@
   };
 
   const getSubjectFromPage = () => {
-    const pathMatch = decodeURIComponent(location.pathname).match(/\/kanji\/([^/?#]+)/u);
+    const pathMatch = decodeURIComponent(location.pathname).match(/(?:\/kanji\/|\/subjects\/kanji\/)([^/?#]+)/u);
     if (pathMatch?.[1] && isKanji(pathMatch[1])) return pathMatch[1];
 
     const selectors = [
