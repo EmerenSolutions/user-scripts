@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.10
+// @version      0.1.11
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -108,8 +108,15 @@
   const isReviewPage = () =>
     /^\/subjects\/review(?:\/|$)/u.test(location.pathname);
 
+  const isLessonPickerPage = () =>
+    /^\/subject-lessons\/picker(?:\/|$)/u.test(location.pathname);
+
   const isLessonPage = () =>
-    /^\/subjects\/lesson(?:\/|$)/u.test(location.pathname)
+    (
+      /^\/subject-lessons(?:\/|$)/u.test(location.pathname)
+      && !isLessonPickerPage()
+    )
+    || /^\/subjects\/lesson(?:\/|$)/u.test(location.pathname)
     || /^\/lesson\/session(?:\/|$)/u.test(location.pathname);
 
   const shouldRunOnCurrentPage = () =>

@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-kanji-components.user.js
 ```
 
-Current version: `0.1.10`.
+Current version: `0.1.11`.
 
 ## Behavior
 
