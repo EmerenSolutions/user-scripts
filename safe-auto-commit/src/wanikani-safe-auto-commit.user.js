@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Safe Auto Commit
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.10.6
+// @version      0.10.7
 // @description  Lightweight safe auto commit for WaniKani reviews and lessons
 // @author       Johan Emerén
 // @match        https://www.wanikani.com/*
@@ -77,13 +77,14 @@
   const getToggleButton = () => $('#WANIKANI_SAFE_AUTOCOMMIT_TOGGLE');
 
   const isReviewPage = () =>
-    location.pathname.startsWith('/subjects/review');
+    /^\/subjects\/review(?:\/|$)/u.test(location.pathname);
 
-  const isLessonPage = () =>
-    location.pathname.startsWith('/subject-lessons/');
+  const isLessonQuizPage = () =>
+    /^\/subject-lessons\/[^/]+\/quiz(?:\/|$)/u.test(location.pathname);
 
   const isAllowedPage = () =>
-    (isReviewPage() && settings.runReviews) || (isLessonPage() && settings.runLessons);
+    (isReviewPage() && settings.runReviews)
+    || (isLessonQuizPage() && settings.runLessons);
 
   const isAllowedQuestionType = questionType =>
     (questionType === 'meaning' && settings.autoMeanings)
@@ -250,12 +251,13 @@
   };
 
   const fail = (reason, detail) => {
+    console.error('[WaniKani Safe Auto Commit]', reason, detail ?? '');
+
+    if (!settings.enabled || !isAllowedPage()) return;
     if (failed) return;
 
     failed = true;
     sessionEnabled = false;
-
-    console.error('[WaniKani Safe Auto Commit]', reason, detail ?? '');
 
     if ($('#WANIKANI_SAFE_AUTOCOMMIT_FAILURE')) return;
 
@@ -492,26 +494,34 @@
   };
 
   const loadSettings = async () => {
-    if (!await readyWkof('Menu,Settings')) return;
+    try {
+      if (!await readyWkof('Menu,Settings')) return;
 
-    await window.wkof.Settings.load(SCRIPT_ID, DEFAULT_SETTINGS);
-    settings = {
-      ...DEFAULT_SETTINGS,
-      ...(window.wkof.settings?.[SCRIPT_ID] || {})
-    };
+      await window.wkof.Settings.load(SCRIPT_ID, DEFAULT_SETTINGS);
+      settings = {
+        ...DEFAULT_SETTINGS,
+        ...(window.wkof.settings?.[SCRIPT_ID] || {})
+      };
 
-    scheduleMenuInstall();
+      scheduleMenuInstall();
+    } catch (err) {
+      console.error('[WaniKani Safe Auto Commit] settings-load', err);
+    }
   };
 
   const installSettingsMenu = () => {
-    if (!window.wkof?.Menu?.insert_script_link) return;
+    try {
+      if (!window.wkof?.Menu?.insert_script_link) return;
 
-    window.wkof.Menu.insert_script_link({
-      name: MENU_LINK_NAME,
-      submenu: 'Settings',
-      title: 'Safe Auto Commit',
-      on_click: openSettings
-    });
+      window.wkof.Menu.insert_script_link({
+        name: MENU_LINK_NAME,
+        submenu: 'Settings',
+        title: 'Safe Auto Commit',
+        on_click: openSettings
+      });
+    } catch (err) {
+      console.error('[WaniKani Safe Auto Commit] menu-install', err);
+    }
   };
 
   const scheduleMenuInstall = () => {
@@ -530,7 +540,11 @@
 
     expected = [];
     updateToggleButton();
-    if (settings.showToggleButton) addToggleButton();
+    if (settings.showToggleButton && isAllowedPage()) {
+      addToggleButton();
+    } else {
+      getToggleButton()?.remove();
+    }
 
     return window.wkof.Settings.save(SCRIPT_ID);
   };
@@ -635,23 +649,49 @@
     enhanceSettingsDialog();
   };
 
-  const startup = async () => {
+  const activateCurrentPage = () => {
+    expected = [];
+
+    if (!isAllowedPage()) {
+      getToggleButton()?.remove();
+      return;
+    }
+
+    loadSynonyms();
+    bindInput();
+    addToggleButton();
+  };
+
+  const handlePageChange = () => {
+    scheduleMenuInstall();
+
     try {
-      await loadSettings();
-      document.addEventListener('turbo:load', scheduleMenuInstall);
-      document.addEventListener('turbo:render', scheduleMenuInstall);
-      window.addEventListener('popstate', scheduleMenuInstall);
-      loadSynonyms();
-      if (isAllowedPage()) {
-        bindInput();
-        addToggleButton();
-      }
+      activateCurrentPage();
+    } catch (err) {
+      fail('page-change', err);
+    }
+  };
+
+  const startup = async () => {
+    await loadSettings();
+    document.addEventListener('turbo:load', handlePageChange);
+    document.addEventListener('turbo:render', handlePageChange);
+    window.addEventListener('popstate', handlePageChange);
+
+    try {
+      activateCurrentPage();
     } catch (err) {
       fail('startup', err);
     }
   };
 
   window.addEventListener('willShowNextQuestion', async event => {
+    if (!isAllowedPage()) {
+      expected = [];
+      getToggleButton()?.remove();
+      return;
+    }
+
     try {
       loadSynonyms();
       await buildExpectedAnswers(event.detail);

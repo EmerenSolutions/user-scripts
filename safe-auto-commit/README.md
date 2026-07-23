@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-safe-auto-commit.user.js
 ```
 
-Current version: `0.10.6`.
+Current version: `0.10.7`.
 
 ## Behavior
 
@@ -16,6 +16,7 @@ Current version: `0.10.6`.
 - Auto-submits reading answers when the typed answer exactly matches an accepted reading.
 - Can auto-advance after correct answers.
 - Includes a session toggle button.
+- Runs only in reviews and enabled lesson quizzes, not in the Lesson Picker or lesson study pages.
 - Uses WaniKani Open Framework for persistent settings when available.
 
 ## Requirements
