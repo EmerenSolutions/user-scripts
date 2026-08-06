@@ -1,15 +1,17 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
-// @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.11
+// @namespace    https://github.com/EmerenSolutions/user-scripts
+// @version      0.1.12
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
+// @copyright    2026, Johan Emerén
+// @license      MIT
 // @match        https://www.wanikani.com/*
 // @match        https://preview.wanikani.com/*
 // @grant        none
 // @run-at       document-idle
-// @downloadURL  https://raw.githubusercontent.com/EmerenSolutions/wanikani-userscripts/main/kanji-components/src/wanikani-kanji-components.user.js
-// @updateURL    https://raw.githubusercontent.com/EmerenSolutions/wanikani-userscripts/main/kanji-components/src/wanikani-kanji-components.user.js
+// @downloadURL  https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js
+// @updateURL    https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js
 // ==/UserScript==
 
 (() => {
@@ -46,6 +48,7 @@
       description: 'Show kanji found inside direct components.'
     }
   };
+  // Replaced by build-userscript.js with the generated decomposition map.
   const COMPONENTS = __COMPONENTS_JSON__;
 
   let settings = { ...DEFAULT_SETTINGS };
@@ -57,8 +60,6 @@
   const $ = selector => document.querySelector(selector);
 
   const isKanji = value => /^[\u3400-\u9fff]$/u.test(value);
-
-  const unique = values => [...new Set(values)];
 
   const removePanel = () => {
     $(`#${SCRIPT_ID}_panel`)?.remove();
@@ -159,6 +160,8 @@
     uniqueComponents((COMPONENTS[character] || []).map(normalizeEntry))
       .filter(component => component.kanji !== character);
 
+  // The decomposition graph can contain repeated or cyclic shapes. Carry one
+  // visited set through the recursion so every kanji appears at most once.
   const getNestedComponents = (character, seen = new Set()) => {
     const result = [];
 
@@ -176,6 +179,8 @@
   const filterToWkKanji = (components, allowed) =>
     components.filter(component => allowed.has(component.kanji));
 
+  // cjk-decomp includes intermediate shapes that WaniKani does not teach.
+  // Promote their descendants until the first displayable WaniKani kanji.
   const getDisplayDirectComponents = (character, allowed) => {
     const result = [];
 
@@ -207,6 +212,9 @@
     return null;
   };
 
+  // WaniKani uses different markup in subjects, reviews, and lessons. Prefer
+  // the largest visible candidate so navigation text is not mistaken for the
+  // active quiz subject, then retain a hidden-element fallback for transitions.
   const getSubjectFromPage = () => {
     const pathMatch = decodeURIComponent(location.pathname).match(/(?:\/kanji\/|\/subjects\/kanji\/)([^/?#]+)/u);
     if (pathMatch?.[1] && isKanji(pathMatch[1])) return pathMatch[1];
@@ -621,6 +629,8 @@
       }, delay);
     });
 
+    // Turbo navigation and quiz transitions replace fragments without a full
+    // page load. Debounce the observer so a render burst produces one scan.
     const observer = new MutationObserver(() => {
       window.clearTimeout(observerTimer);
       observerTimer = window.setTimeout(renderCurrentPage, 100);

@@ -9,7 +9,7 @@ The installable userscript is:
 src/wanikani-progressive-japanese-ui.user.js
 ```
 
-Current version: `0.1.0` while the first browser-tested release is developed.
+Current version: `0.1.0`.
 
 ## Behavior
 
@@ -43,7 +43,12 @@ The script does not request or store an API token itself.
 
 ## Install
 
-From the repository root, serve the userscript over loopback:
+[Install Progressive Japanese UI](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js),
+review the allowlisted sites and storage permissions, and confirm the
+installation in Violentmonkey.
+
+For local development, serve the script from the repository root over
+loopback:
 
 ```sh
 python3 -m http.server 8765 --bind 127.0.0.1

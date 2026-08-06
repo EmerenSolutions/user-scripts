@@ -1,15 +1,17 @@
 // ==UserScript==
 // @name         WaniKani Safe Auto Commit
-// @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.10.7
-// @description  Lightweight safe auto commit for WaniKani reviews and lessons
+// @namespace    https://github.com/EmerenSolutions/user-scripts
+// @version      0.10.8
+// @description  Submits exact accepted answers in WaniKani reviews and lesson quizzes
 // @author       Johan Emerén
+// @copyright    2026, Johan Emerén
+// @license      MIT
 // @match        https://www.wanikani.com/*
 // @match        https://preview.wanikani.com/*
 // @grant        none
 // @run-at       document-idle
-// @downloadURL  https://raw.githubusercontent.com/EmerenSolutions/wanikani-userscripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js
-// @updateURL    https://raw.githubusercontent.com/EmerenSolutions/wanikani-userscripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js
+// @downloadURL  https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js
+// @updateURL    https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js
 // ==/UserScript==
 
 (() => {
@@ -112,6 +114,8 @@
     button.style.opacity = sessionEnabled ? '1' : '0.5';
   };
 
+  // Exact matching still normalizes width, case, and incidental whitespace so
+  // equivalent IME and keyboard input is treated consistently.
   const normalize = value =>
     String(value ?? '').normalize('NFKC').trim().replace(/\s+/g, '').toLowerCase();
 
@@ -334,6 +338,9 @@
   const getSynonyms = subjectId =>
     synonyms[subjectId] || synonyms[String(subjectId)] || [];
 
+  // WaniKani's first click checks the answer; a second click advances after a
+  // correct result. The lock prevents overlapping input events from clicking
+  // either stage more than once.
   const submit = () => {
     if (locked || failed || !shouldRun()) return;
 
@@ -381,6 +388,8 @@
     }
   };
 
+  // The immediate animation-frame check handles normal typing. Delayed checks
+  // cover paste, IME completion, and page state that settles after the event.
   const scheduleCheckAnswer = () => {
     window.clearTimeout(checkTimer);
 
@@ -389,6 +398,9 @@
     window.setTimeout(checkAnswer, 160);
   };
 
+  // Prefer answer data delivered with the quiz event, then fall back to WKOF's
+  // cached items and API data. An empty answer set always leaves submission to
+  // the user instead of guessing.
   const buildExpectedAnswers = async item => {
     expected = [];
     if (!isAllowedPage()) return;
