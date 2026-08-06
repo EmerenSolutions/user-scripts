@@ -9,6 +9,7 @@ progressive Japanese immersion, and itch.io browser games.
 | --- | --- | --- | --- | --- |
 | [Safe Auto Commit](safe-auto-commit/README.md) | Submits only exact accepted answers during supported WaniKani quizzes. | WaniKani | `0.10.9` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js) |
 | [Kanji Components](kanji-components/README.md) | Shows whole kanji used as visual components inside the current kanji. | WaniKani | `0.1.13` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js) |
+| [Review Forecast Open Today](review-forecast-open-today/README.md) | Opens today's hourly Review Forecast schedule on the dashboard. | WaniKani | `0.3.2` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/review-forecast-open-today/src/wanikani-review-forecast-open-today.user.js) |
 | [Progressive Japanese UI](japanese-ui/README.md) | Replaces eligible interface words with vocabulary already learned in WaniKani. | WaniKani, YouTube, Nexus Mods, Google Keep | `0.1.1` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js) |
 | [Universal Speed Control](universal-speed/README.md) | Adjusts browser timers and animation clocks with per-site controls. | itch.io games | `0.6.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/universal-speed/src/universal-speed-control.user.js) |
 
@@ -29,13 +30,15 @@ The source files also declare GitHub-hosted update URLs, so userscript managers
 can detect releases merged into `main`.
 
 A userscript's name and namespace form its permanent installation identity.
-Safe Auto Commit and Kanji Components therefore retain their original
-`wanikani-userscripts` namespace after the repository rename. New scripts use
-the current repository URL as their namespace.
+Safe Auto Commit, Kanji Components, and Review Forecast Open Today therefore
+retain their original `wanikani-userscripts` namespace after the repository
+rename. New scripts use the current repository URL as their namespace.
 
 ## Privacy and security
 
 - No script sends analytics or telemetry.
+- Review Forecast Open Today only activates an existing dashboard control; it
+  makes no network requests and stores no data.
 - Progressive Japanese UI stores its learned-vocabulary cache in
   Violentmonkey storage and runs in an isolated content context. A temporary
   bridge accesses WKOF only on WaniKani; the API token is not copied to other
@@ -73,6 +76,7 @@ root.
 user-scripts/
 ├── safe-auto-commit/
 ├── kanji-components/
+├── review-forecast-open-today/
 ├── japanese-ui/
 ├── universal-speed/
 ├── scripts/
