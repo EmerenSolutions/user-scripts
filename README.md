@@ -6,6 +6,7 @@ Personal userscripts and tools for improving the WaniKani study experience.
 
 - `safe-auto-commit` - safely auto-submits matching answers in WaniKani reviews and optional lesson quizzes.
 - `kanji-components` - shows whole kanji that appear as visual components inside another kanji.
+- `japanese-ui` - progressively replaces UI labels with Japanese vocabulary you have learned.
 
 ## Install
 
@@ -13,6 +14,7 @@ Install scripts with a userscript manager such as Tampermonkey or Violentmonkey.
 
 - Safe Auto Commit: `safe-auto-commit/src/wanikani-safe-auto-commit.user.js`
 - Kanji Components: `kanji-components/src/wanikani-kanji-components.user.js`
+- Progressive Japanese UI: `japanese-ui/src/wanikani-progressive-japanese-ui.user.js`
 
 ## Naming
 
@@ -25,3 +27,4 @@ Install scripts with a userscript manager such as Tampermonkey or Violentmonkey.
 
 - `safe-auto-commit` is edited directly as a userscript in `src/`.
 - `kanji-components` is generated from a readable template plus bundled decomposition data. Edit `scripts/wanikani-kanji-components.template.js`, then run the build scripts listed in its README.
+- `japanese-ui` is edited directly as a userscript in `src/`.
