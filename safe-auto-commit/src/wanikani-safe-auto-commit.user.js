@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Safe Auto Commit
-// @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.10.8
+// @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
+// @version      0.10.9
 // @description  Submits exact accepted answers in WaniKani reviews and lesson quizzes
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén

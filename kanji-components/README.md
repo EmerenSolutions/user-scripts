@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-kanji-components.user.js
 ```
 
-Current version: `0.1.12`.
+Current version: `0.1.13`.
 
 ## Behavior
 
@@ -57,5 +57,7 @@ Run the complete repository validation with `npm run check`.
 ## License
 
 Original script and build code is licensed under the repository's MIT License.
-The vendored `cjk-decomp` data remains under Apache-2.0; see
-`vendor/cjk-decomp/LICENSE` and the repository's `THIRD_PARTY_NOTICES.md`.
+The vendored and embedded `cjk-decomp` data remains under Apache-2.0. The
+installable userscript includes the required source, modification, and license
+notice. See `vendor/cjk-decomp/LICENSE` and the repository's
+`THIRD_PARTY_NOTICES.md`.
