@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-kanji-components.user.js
 ```
 
-Current version: `0.1.11`.
+Current version: `0.1.12`.
 
 ## Behavior
 
@@ -25,8 +25,14 @@ This script is separate from WaniKani radical mnemonics and reading/phonetic-ser
 
 ## Requirements
 
-- A userscript manager such as Tampermonkey or Violentmonkey.
+- The open-source [Violentmonkey](https://violentmonkey.github.io/) userscript
+  manager.
 - WaniKani Open Framework is required so the component list can be filtered to WaniKani kanji.
+
+## Install
+
+[Install Kanji Components](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js),
+review its WaniKani site access, and confirm the installation in Violentmonkey.
 
 ## Data Source
 
@@ -43,6 +49,13 @@ vendor/cjk-decomp/LICENSE
 Regenerate the component map and installable userscript with:
 
 ```sh
-node scripts/build-components.js
-node scripts/build-userscript.js
+npm run build:kanji-components
 ```
+
+Run the complete repository validation with `npm run check`.
+
+## License
+
+Original script and build code is licensed under the repository's MIT License.
+The vendored `cjk-decomp` data remains under Apache-2.0; see
+`vendor/cjk-decomp/LICENSE` and the repository's `THIRD_PARTY_NOTICES.md`.

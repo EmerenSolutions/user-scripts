@@ -193,10 +193,9 @@ test('scales timeouts, forwards arguments, and clears logical timer IDs', () => 
 
 test('implements intervals with scaled recursive scheduling and supports clearing in a callback', () => {
   const harness = createHarness();
-  let intervalId;
   let callCount = 0;
 
-  intervalId = harness.context.setInterval(() => {
+  const intervalId = harness.context.setInterval(() => {
     callCount += 1;
     harness.context.clearTimeout(intervalId);
   }, 80);
@@ -286,13 +285,11 @@ test('allows one animation callback to cancel another callback in the same frame
     requestAnimationFrame: false
   });
   const calls = [];
-  let secondId;
-
   harness.context.requestAnimationFrame(() => {
     calls.push('first');
     harness.context.cancelAnimationFrame(secondId);
   });
-  secondId = harness.context.requestAnimationFrame(() => calls.push('second'));
+  const secondId = harness.context.requestAnimationFrame(() => calls.push('second'));
 
   harness.advance(16);
   harness.fireFrame();

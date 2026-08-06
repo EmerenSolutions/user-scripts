@@ -36,8 +36,9 @@ Current version: `0.6.0`.
 
 ## Install
 
-Install `src/universal-speed-control.user.js` with an open-source userscript
-manager such as Violentmonkey.
+[Install Universal Speed Control](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/universal-speed/src/universal-speed-control.user.js)
+with the open-source [Violentmonkey](https://violentmonkey.github.io/)
+userscript manager. Review the declared itch.io site access before confirming.
 
 The script uses an isolated on-page control because a userscript cannot create
 a browser-toolbar popup.

@@ -28,6 +28,8 @@
   const CACHE_KEY = 'learned-vocabulary-cache-v1';
   const CACHE_SCHEMA_VERSION = 1;
   const MINIMUM_SRS_STAGE = 1;
+  // Page-context injection is intentional: WKOF lives on the page's window,
+  // while Violentmonkey still supplies the GM storage functions used below.
   const pageWindow = typeof unsafeWindow === 'undefined' ? window : unsafeWindow;
   const UI_ANCESTOR_SELECTOR = [
     'a',
@@ -402,6 +404,9 @@
       .filter(Boolean)
   );
 
+  // A learned meaning can map to more than one vocabulary item. Prefer primary
+  // accepted meanings, then make equal-score selection deterministic. Common
+  // and ambiguous English words are excluded rather than translated poorly.
   const buildLearnedMeaningTranslations = learnedItems => {
     const candidates = new Map();
 
@@ -455,6 +460,9 @@
     return activeTranslations;
   };
 
+  // Retained as a focused composition boundary and instrumented by the unit
+  // tests, even though production cache activation uses the function below.
+  // deno-lint-ignore no-unused-vars
   const buildTranslations = (learnedVocabulary, learnedItems = []) => (
     applyTermRules(
       buildLearnedMeaningTranslations(learnedItems),
@@ -555,6 +563,8 @@
     pageWindow.__wanikaniProgressiveJapaneseUI = { ...runtimeStatus };
   };
 
+  // Keep the original text for Turbo page caching and for host pages that
+  // rewrite an already translated node after a dynamic update.
   const processTextNode = node => {
     const previous = translatedNodes.get(node);
     if (previous) {
@@ -656,6 +666,8 @@
     );
   };
 
+  // WaniKani is the only API-backed host. Other allowlisted sites can read the
+  // vocabulary cache but never receive WKOF or the user's API token.
   const initializeFromWaniKani = async () => {
     if (!pageWindow.wkof?.include || !pageWindow.wkof?.ready) {
       console.warn(

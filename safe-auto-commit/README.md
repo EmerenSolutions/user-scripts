@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-safe-auto-commit.user.js
 ```
 
-Current version: `0.10.7`.
+Current version: `0.10.8`.
 
 ## Behavior
 
@@ -21,9 +21,28 @@ Current version: `0.10.7`.
 
 ## Requirements
 
-- A userscript manager such as Tampermonkey or Violentmonkey.
+- The open-source [Violentmonkey](https://violentmonkey.github.io/) userscript
+  manager.
 - WaniKani Open Framework is recommended for settings and fallback subject lookup.
+
+## Install
+
+[Install Safe Auto Commit](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js),
+review its WaniKani site access, and confirm the installation in Violentmonkey.
 
 ## Safety Notes
 
 This script is intentionally conservative: it submits only when the normalized input matches known accepted answers. If required WaniKani page structure is missing, it disables itself and shows an update warning.
+
+## Validation
+
+From the repository root, run:
+
+```sh
+npm run check
+```
+
+## License
+
+Copyright © 2026 Johan Emerén. This script is licensed under the MIT License
+included at the repository root.
