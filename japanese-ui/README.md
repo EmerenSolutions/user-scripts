@@ -9,7 +9,7 @@ The installable userscript is:
 src/wanikani-progressive-japanese-ui.user.js
 ```
 
-Current version: `0.1.0`.
+Current version: `0.1.1`.
 
 ## Behavior
 
@@ -29,9 +29,11 @@ Current version: `0.1.0`.
 - Avoids mnemonic, explanation, context-sentence, form, and code content.
 - Runs only on the private allowlist: WaniKani, YouTube, Nexus Mods, and
   Google Keep.
-- Refreshes a private Violentmonkey cache whenever WaniKani is opened, then
-  uses that learned-word cache on allowlisted sites. The API token is never
-  copied or exposed to those sites.
+- Runs the translator and its learned-word cache inside Violentmonkey's
+  isolated content context on every site.
+- Uses a short-lived WaniKani-only bridge to request minimized vocabulary and
+  assignment data from WKOF, then removes the bridge. The API token is never
+  copied or exposed to other sites.
 
 ## Requirements
 
