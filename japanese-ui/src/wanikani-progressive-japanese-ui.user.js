@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Progressive Japanese UI
 // @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.1.0
+// @version      0.1.1
 // @description  Replaces UI words with Japanese vocabulary learned in WaniKani
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -11,10 +11,11 @@
 // @match        https://www.youtube.com/*
 // @match        https://www.nexusmods.com/*
 // @match        https://keep.google.com/*
+// @grant        GM_addElement
 // @grant        GM_getValue
 // @grant        GM_setValue
-// @grant        unsafeWindow
-// @inject-into  page
+// @inject-into  content
+// @noframes
 // @run-at       document-idle
 // @downloadURL  https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js
 // @updateURL    https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js
@@ -24,13 +25,12 @@
   'use strict';
 
   const SCRIPT_NAME = 'WaniKani Progressive Japanese UI';
-  const SCRIPT_VERSION = '0.1.0';
+  const SCRIPT_VERSION = '0.1.1';
   const CACHE_KEY = 'learned-vocabulary-cache-v1';
   const CACHE_SCHEMA_VERSION = 1;
   const MINIMUM_SRS_STAGE = 1;
-  // Page-context injection is intentional: WKOF lives on the page's window,
-  // while Violentmonkey still supplies the GM storage functions used below.
-  const pageWindow = typeof unsafeWindow === 'undefined' ? window : unsafeWindow;
+  const WKOF_BRIDGE_EVENT_PREFIX = 'wanikani-progressive-japanese-ui:wkof';
+  const WKOF_BRIDGE_TIMEOUT_MS = 15000;
   const UI_ANCESTOR_SELECTOR = [
     'a',
     'button',
@@ -383,8 +383,7 @@
     lastSyncedAt: null,
     learnedItems: 0,
     learnedMeanings: 0,
-    translatedNodes: 0,
-    replacements: []
+    translatedNodes: 0
   };
 
   const normalizeSource = value => String(value).toLocaleLowerCase('en-US');
@@ -500,6 +499,84 @@
     hostname === 'www.wanikani.com' || hostname === 'preview.wanikani.com'
   );
 
+  const serializeWkofItems = items => (Array.isArray(items) ? items : []).map(item => ({
+    object: item?.object,
+    data: {
+      characters: item?.data?.characters,
+      slug: item?.data?.slug,
+      hidden_at: item?.data?.hidden_at,
+      meanings: (item?.data?.meanings || []).map(meaning => ({
+        meaning: meaning?.meaning,
+        primary: Boolean(meaning?.primary),
+        accepted_answer: meaning?.accepted_answer
+      }))
+    },
+    assignments: item?.assignments
+      ? {
+        srs_stage: item.assignments.srs_stage,
+        started_at: item.assignments.started_at
+      }
+      : null
+  }));
+
+  const runWkofBridge = async (responseEventName, serializeItems) => {
+    const respond = payload => document.documentElement.dispatchEvent(
+      new CustomEvent(responseEventName, { detail: JSON.stringify(payload) })
+    );
+
+    try {
+      if (!window.wkof?.include || !window.wkof?.ready) {
+        throw new Error('WaniKani Open Framework is not available.');
+      }
+
+      window.wkof.include('ItemData');
+      await window.wkof.ready('ItemData');
+
+      const items = await window.wkof.ItemData.get_items({
+        wk_items: {
+          options: { assignments: true },
+          filters: { item_type: 'vocabulary,kana_vocabulary' }
+        }
+      });
+
+      respond({ ok: true, items: serializeItems(items) });
+    } catch (error) {
+      respond({
+        ok: false,
+        error: error && typeof error.message === 'string'
+          ? error.message
+          : String(error)
+      });
+    }
+  };
+
+  const createWkofBridgeSource = responseEventName => (
+    `void (${runWkofBridge.toString()})(`
+    + `${JSON.stringify(responseEventName)}, (${serializeWkofItems.toString()}));`
+  );
+
+  const parseWkofBridgeDetail = detail => {
+    if (typeof detail !== 'string') {
+      throw new Error('WKOF bridge returned an invalid response.');
+    }
+
+    const payload = JSON.parse(detail);
+    if (payload?.ok !== true) {
+      throw new Error(payload?.error || 'WKOF bridge failed.');
+    }
+    if (!Array.isArray(payload.items)) {
+      throw new Error('WKOF bridge returned invalid item data.');
+    }
+
+    return payload.items;
+  };
+
+  const createBridgeEventName = () => {
+    const identifier = globalThis.crypto?.randomUUID?.()
+      || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    return `${WKOF_BRIDGE_EVENT_PREFIX}:${identifier}`;
+  };
+
   const singularize = word => {
     if (word.endsWith('ies') && word.length > 4) return `${word.slice(0, -3)}y`;
     if (/(?:ches|shes|sses|xes|zes)$/u.test(word)) return word.slice(0, -2);
@@ -552,15 +629,8 @@
     );
   };
 
-  const publishStatus = () => {
+  const updateStatus = () => {
     runtimeStatus.translatedNodes = translatedNodes.size;
-    runtimeStatus.replacements = [...translatedNodes.values()]
-      .slice(0, 100)
-      .map(({ original, translated }) => ({
-        original: original.trim(),
-        translated: translated.trim()
-      }));
-    pageWindow.__wanikaniProgressiveJapaneseUI = { ...runtimeStatus };
   };
 
   // Keep the original text for Turbo page caching and for host pages that
@@ -596,7 +666,7 @@
       processTextNode(node);
       node = walker.nextNode();
     }
-    publishStatus();
+    updateStatus();
   };
 
   const stopObserving = () => {
@@ -610,7 +680,7 @@
       if (node.nodeValue === record.translated) node.nodeValue = record.original;
     }
     translatedNodes.clear();
-    publishStatus();
+    updateStatus();
   };
 
   const startObserving = () => {
@@ -626,7 +696,7 @@
 
         for (const node of mutation.addedNodes) processSubtree(node);
       }
-      publishStatus();
+      updateStatus();
     });
     observer.observe(document.documentElement, {
       characterData: true,
@@ -635,19 +705,43 @@
     });
   };
 
-  const loadLearnedItems = async () => {
-    pageWindow.wkof.include('ItemData');
-    await pageWindow.wkof.ready('ItemData');
+  const loadLearnedItems = () => new Promise((resolve, reject) => {
+    const responseEventName = createBridgeEventName();
+    const timeout = setTimeout(() => {
+      document.documentElement.removeEventListener(responseEventName, handleResponse);
+      reject(new Error('Timed out while waiting for WaniKani Open Framework.'));
+    }, WKOF_BRIDGE_TIMEOUT_MS);
 
-    const items = await pageWindow.wkof.ItemData.get_items({
-      wk_items: {
-        options: { assignments: true },
-        filters: { item_type: 'vocabulary,kana_vocabulary' }
+    const cleanup = () => {
+      clearTimeout(timeout);
+      document.documentElement.removeEventListener(responseEventName, handleResponse);
+    };
+
+    const handleResponse = event => {
+      if (event.target !== document.documentElement) return;
+
+      try {
+        const items = parseWkofBridgeDetail(event.detail);
+        cleanup();
+        resolve(collectLearnedItems(items));
+      } catch (error) {
+        cleanup();
+        reject(error);
       }
-    });
+    };
 
-    return collectLearnedItems(items);
-  };
+    document.documentElement.addEventListener(responseEventName, handleResponse);
+
+    try {
+      const bridgeElement = GM_addElement('script', {
+        textContent: createWkofBridgeSource(responseEventName)
+      });
+      bridgeElement.remove();
+    } catch (error) {
+      cleanup();
+      reject(error);
+    }
+  });
 
   const activateTranslations = cache => {
     translations = buildTranslationsFromCache(cache);
@@ -669,14 +763,6 @@
   // WaniKani is the only API-backed host. Other allowlisted sites can read the
   // vocabulary cache but never receive WKOF or the user's API token.
   const initializeFromWaniKani = async () => {
-    if (!pageWindow.wkof?.include || !pageWindow.wkof?.ready) {
-      console.warn(
-        `[${SCRIPT_NAME}] WaniKani Open Framework is required: `
-        + 'https://community.wanikani.com/t/28549'
-      );
-      return;
-    }
-
     const learnedItems = await loadLearnedItems();
     const cache = createLearnedCache(learnedItems);
     GM_setValue(CACHE_KEY, cache);

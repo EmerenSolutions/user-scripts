@@ -20,10 +20,13 @@ const exposeInternals = SCRIPT_SOURCE.replace(
     buildTranslationsFromCache,
     collectLearnedItems,
     collectLearnedVocabulary,
+    createWkofBridgeSource,
     createLearnedCache,
     isUiTextNode,
     isValidLearnedCache,
     isWaniKaniHost,
+    parseWkofBridgeDetail,
+    serializeWkofItems,
     singularize,
     translateCoreText,
     translateText
@@ -62,7 +65,160 @@ test('limits execution to WaniKani and the private site allowlist', () => {
   assert.equal(api.isWaniKaniHost('www.wanikani.com'), true);
   assert.equal(api.isWaniKaniHost('preview.wanikani.com'), true);
   assert.equal(api.isWaniKaniHost('www.youtube.com'), false);
-  assert.match(SCRIPT_SOURCE, /@inject-into\s+page/u);
+  assert.match(SCRIPT_SOURCE, /@inject-into\s+content/u);
+  assert.match(SCRIPT_SOURCE, /@grant\s+GM_addElement/u);
+  assert.match(SCRIPT_SOURCE, /@noframes/u);
+  assert.doesNotMatch(SCRIPT_SOURCE, /@grant\s+unsafeWindow/u);
+  assert.doesNotMatch(SCRIPT_SOURCE, /__wanikaniProgressiveJapaneseUI/u);
+});
+
+test('serializes only the WKOF fields required to build translations', () => {
+  const serialized = api.serializeWkofItems([{
+    object: 'vocabulary',
+    apiToken: 'must-not-cross-the-bridge',
+    data: {
+      characters: '今日',
+      slug: '今日',
+      hidden_at: null,
+      level: 3,
+      meanings: [{
+        meaning: 'Today',
+        primary: true,
+        accepted_answer: true,
+        auxiliary: 'not-required'
+      }]
+    },
+    assignments: {
+      srs_stage: 2,
+      started_at: '2026-08-06T00:00:00Z',
+      available_at: '2026-08-07T00:00:00Z'
+    }
+  }]);
+  const plain = JSON.parse(JSON.stringify(serialized));
+
+  assert.deepEqual(plain, [{
+    object: 'vocabulary',
+    data: {
+      characters: '今日',
+      slug: '今日',
+      hidden_at: null,
+      meanings: [{
+        meaning: 'Today',
+        primary: true,
+        accepted_answer: true
+      }]
+    },
+    assignments: {
+      srs_stage: 2,
+      started_at: '2026-08-06T00:00:00Z'
+    }
+  }]);
+  assert.doesNotMatch(JSON.stringify(plain), /must-not-cross-the-bridge/u);
+});
+
+test('creates a narrow page bridge and validates its response', () => {
+  const eventName = 'wanikani-progressive-japanese-ui:wkof:test';
+  const source = api.createWkofBridgeSource(eventName);
+  const items = [{ object: 'vocabulary', data: {}, assignments: null }];
+
+  assert.match(source, new RegExp(eventName));
+  assert.match(source, /window\.wkof/u);
+  assert.doesNotMatch(source, /GM_(?:get|set)Value/u);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(api.parseWkofBridgeDetail(JSON.stringify({
+      ok: true,
+      items
+    })))),
+    items
+  );
+  assert.throws(
+    () => api.parseWkofBridgeDetail(JSON.stringify({ ok: false, error: 'WKOF failed' })),
+    /WKOF failed/u
+  );
+  assert.throws(() => api.parseWkofBridgeDetail({}), /invalid response/u);
+});
+
+test('page bridge requests WKOF data and emits a minimized JSON response', async () => {
+  const calls = [];
+  const events = [];
+  const bridgeContext = {
+    Array,
+    Boolean,
+    CustomEvent: class {
+      constructor(type, options) {
+        this.type = type;
+        this.detail = options.detail;
+      }
+    },
+    Error,
+    JSON,
+    String,
+    document: {
+      documentElement: {
+        dispatchEvent(event) {
+          events.push(event);
+        }
+      }
+    },
+    window: {
+      wkof: {
+        include(module) {
+          calls.push(['include', module]);
+        },
+        ready(module) {
+          calls.push(['ready', module]);
+          return Promise.resolve();
+        },
+        ItemData: {
+          get_items(options) {
+            calls.push(['get_items', JSON.parse(JSON.stringify(options))]);
+            return Promise.resolve([{
+              object: 'vocabulary',
+              apiToken: 'must-not-cross-the-bridge',
+              data: {
+                characters: '今日',
+                slug: '今日',
+                hidden_at: null,
+                meanings: [{
+                  meaning: 'Today',
+                  primary: true,
+                  accepted_answer: true
+                }]
+              },
+              assignments: {
+                srs_stage: 2,
+                started_at: '2026-08-06T00:00:00Z'
+              }
+            }]);
+          }
+        }
+      }
+    }
+  };
+
+  vm.runInNewContext(
+    api.createWkofBridgeSource('wanikani-progressive-japanese-ui:wkof:test'),
+    bridgeContext
+  );
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.deepEqual(calls, [
+    ['include', 'ItemData'],
+    ['ready', 'ItemData'],
+    ['get_items', {
+      wk_items: {
+        options: { assignments: true },
+        filters: { item_type: 'vocabulary,kana_vocabulary' }
+      }
+    }]
+  ]);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].type, 'wanikani-progressive-japanese-ui:wkof:test');
+
+  const response = JSON.parse(events[0].detail);
+  assert.equal(response.ok, true);
+  assert.equal(response.items[0].data.characters, '今日');
+  assert.doesNotMatch(events[0].detail, /must-not-cross-the-bridge/u);
 });
 
 const vocabulary = (characters, options = {}) => ({

@@ -9,7 +9,7 @@ progressive Japanese immersion, and itch.io browser games.
 | --- | --- | --- | --- | --- |
 | [Safe Auto Commit](safe-auto-commit/README.md) | Submits only exact accepted answers during supported WaniKani quizzes. | WaniKani | `0.10.9` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js) |
 | [Kanji Components](kanji-components/README.md) | Shows whole kanji used as visual components inside the current kanji. | WaniKani | `0.1.13` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js) |
-| [Progressive Japanese UI](japanese-ui/README.md) | Replaces eligible interface words with vocabulary already learned in WaniKani. | WaniKani, YouTube, Nexus Mods, Google Keep | `0.1.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js) |
+| [Progressive Japanese UI](japanese-ui/README.md) | Replaces eligible interface words with vocabulary already learned in WaniKani. | WaniKani, YouTube, Nexus Mods, Google Keep | `0.1.1` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js) |
 | [Universal Speed Control](universal-speed/README.md) | Adjusts browser timers and animation clocks with per-site controls. | itch.io games | `0.6.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/universal-speed/src/universal-speed-control.user.js) |
 
 ## Installation
@@ -37,7 +37,8 @@ the current repository URL as their namespace.
 
 - No script sends analytics or telemetry.
 - Progressive Japanese UI stores its learned-vocabulary cache in
-  Violentmonkey storage; it does not copy the WaniKani API token to other
+  Violentmonkey storage and runs in an isolated content context. A temporary
+  bridge accesses WKOF only on WaniKani; the API token is not copied to other
   sites.
 - Universal Speed Control stores per-origin settings in `localStorage` and
   does not communicate with a remote service.
