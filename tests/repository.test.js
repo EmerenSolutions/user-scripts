@@ -11,19 +11,27 @@ const ROOT_README = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 const scripts = [
   {
     directory: 'safe-auto-commit',
-    source: 'safe-auto-commit/src/wanikani-safe-auto-commit.user.js'
+    source: 'safe-auto-commit/src/wanikani-safe-auto-commit.user.js',
+    namespace: 'https://github.com/EmerenSolutions/wanikani-userscripts',
+    license: 'MIT'
   },
   {
     directory: 'kanji-components',
-    source: 'kanji-components/src/wanikani-kanji-components.user.js'
+    source: 'kanji-components/src/wanikani-kanji-components.user.js',
+    namespace: 'https://github.com/EmerenSolutions/wanikani-userscripts',
+    license: 'MIT AND Apache-2.0'
   },
   {
     directory: 'japanese-ui',
-    source: 'japanese-ui/src/wanikani-progressive-japanese-ui.user.js'
+    source: 'japanese-ui/src/wanikani-progressive-japanese-ui.user.js',
+    namespace: REPOSITORY_URL,
+    license: 'MIT'
   },
   {
     directory: 'universal-speed',
-    source: 'universal-speed/src/universal-speed-control.user.js'
+    source: 'universal-speed/src/universal-speed-control.user.js',
+    namespace: REPOSITORY_URL,
+    license: 'MIT'
   }
 ];
 
@@ -60,8 +68,8 @@ for (const script of scripts) {
     const expectedRawUrl = `${RAW_ROOT}/${script.source}`;
 
     assert.match(version, /^\d+\.\d+\.\d+$/u);
-    assert.equal(singleMetadataValue(metadata, 'namespace'), REPOSITORY_URL);
-    assert.equal(singleMetadataValue(metadata, 'license'), 'MIT');
+    assert.equal(singleMetadataValue(metadata, 'namespace'), script.namespace);
+    assert.equal(singleMetadataValue(metadata, 'license'), script.license);
     assert.equal(singleMetadataValue(metadata, 'copyright'), '2026, Johan Emerén');
     assert.equal(singleMetadataValue(metadata, 'downloadURL'), expectedRawUrl);
     assert.equal(singleMetadataValue(metadata, 'updateURL'), expectedRawUrl);
@@ -76,9 +84,20 @@ for (const script of scripts) {
 test('generated Kanji Components userscript matches its template and data', () => {
   const template = read('kanji-components/scripts/wanikani-kanji-components.template.js');
   const components = read('kanji-components/data/components.json').trim();
+  const apacheLicense = read('kanji-components/vendor/cjk-decomp/LICENSE')
+    .trim()
+    .split(/\r?\n/u)
+    .map(line => line ? ` * ${line}` : ' *')
+    .join('\n');
   const generated = read('kanji-components/src/wanikani-kanji-components.user.js');
 
-  assert.equal(generated, template.replace('__COMPONENTS_JSON__', components));
+  const expected = template
+    .replace('__CJK_DECOMP_LICENSE__', apacheLicense)
+    .replace('__COMPONENTS_JSON__', components);
+
+  assert.equal(generated, expected);
+  assert.match(generated, /source data was modified/u);
+  assert.match(generated, /Apache License\s+\*\s+Version 2\.0/u);
 });
 
 test('third-party data retains its license and repository notice', () => {

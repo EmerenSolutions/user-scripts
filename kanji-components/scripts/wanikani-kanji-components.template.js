@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
-// @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.1.12
+// @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
+// @version      0.1.13
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
-// @license      MIT
+// @license      MIT AND Apache-2.0
 // @match        https://www.wanikani.com/*
 // @match        https://preview.wanikani.com/*
 // @grant        none
@@ -13,6 +13,20 @@
 // @downloadURL  https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js
 // @updateURL    https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js
 // ==/UserScript==
+
+/*
+ * Embedded data notice
+ *
+ * This userscript contains component-decomposition data derived from cjk-decomp:
+ * https://github.com/amake/cjk-decomp
+ *
+ * The source data was modified by normalizing component forms and converting it
+ * into the JSON lookup table embedded below. The original userscript code is
+ * licensed under MIT; cjk-decomp and the derived data are licensed under the
+ * Apache License 2.0, reproduced here in full.
+ *
+__CJK_DECOMP_LICENSE__
+ */
 
 (() => {
   'use strict';
