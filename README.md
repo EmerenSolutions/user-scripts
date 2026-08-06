@@ -36,8 +36,8 @@ can detect releases merged into `main`.
   sites.
 - Universal Speed Control stores per-origin settings in `localStorage` and
   does not communicate with a remote service.
-- Review a userscript's metadata and source before installing it, and report
-  security concerns according to [SECURITY.md](SECURITY.md).
+- Review a userscript's metadata and source before installing it. Report
+  security concerns through GitHub's private vulnerability reporting.
 
 ## Development
 
@@ -56,9 +56,6 @@ npm run build:kanji-components
 The generated userscript is committed so its raw GitHub URL remains directly
 installable. Repository tests verify that the generated file matches its
 template and data source.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for branch, commit, release, and review
-conventions.
 
 ## Repository layout
 
