@@ -22,6 +22,12 @@ const scripts = [
     license: 'MIT AND Apache-2.0'
   },
   {
+    directory: 'review-forecast-open-today',
+    source: 'review-forecast-open-today/src/wanikani-review-forecast-open-today.user.js',
+    namespace: 'https://github.com/EmerenSolutions/wanikani-userscripts',
+    license: 'MIT'
+  },
+  {
     directory: 'japanese-ui',
     source: 'japanese-ui/src/wanikani-progressive-japanese-ui.user.js',
     namespace: REPOSITORY_URL,
