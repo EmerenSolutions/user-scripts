@@ -9,6 +9,8 @@
 // @match        https://itch.io/*
 // @match        https://*.itch.io/*
 // @match        https://html-classic.itch.zone/*
+// @match        https://crazygames.com/*
+// @match        https://*.crazygames.com/*
 // @grant        none
 // @inject-into  page
 // @run-at       document-start

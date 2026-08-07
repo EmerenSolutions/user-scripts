@@ -21,14 +21,16 @@ const DEFAULT_SETTINGS = {
   requestAnimationFrame: true
 };
 
-test('limits injection to itch.io pages and the itch.io HTML-game CDN', () => {
+test('limits injection to itch.io and CrazyGames pages', () => {
   const matches = [...SCRIPT_SOURCE.matchAll(/^\/\/ @match\s+(.+)$/gm)]
     .map(match => match[1]);
 
   assert.deepEqual(matches, [
     'https://itch.io/*',
     'https://*.itch.io/*',
-    'https://html-classic.itch.zone/*'
+    'https://html-classic.itch.zone/*',
+    'https://crazygames.com/*',
+    'https://*.crazygames.com/*'
   ]);
   assert.doesNotMatch(SCRIPT_SOURCE, /Alt\+Shift|KeyS/);
 });
