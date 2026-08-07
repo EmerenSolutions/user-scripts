@@ -13,8 +13,8 @@ Current version: `0.6.0`.
 
 ## Behavior
 
-- Runs at `document-start` only on itch.io pages and itch.io's HTML-game CDN,
-  including their frames.
+- Runs at `document-start` only on itch.io pages, itch.io's HTML-game CDN,
+  and CrazyGames pages, including embedded frames.
 - Starts at `1×` with every timing override disabled.
 - Can independently scale `setInterval`, `setTimeout`, `performance.now()`,
   `Date.now()`, and `requestAnimationFrame`.
@@ -73,8 +73,9 @@ break unrelated UI, networking timeouts, or anti-abuse logic.
 
 - It affects the current page and its frames, but not Web Workers or
   Service Workers.
-- Its metadata currently includes only `itch.io`, `*.itch.io`, and
-  `html-classic.itch.zone`. Add more explicit `@match` entries as needed.
+- Its metadata currently includes `itch.io`, `*.itch.io`, `html-classic.itch.zone`,
+  `crazygames.com`, and `*.crazygames.com`. Add more explicit `@match` entries
+  as needed.
 - Browser throttling in hidden/background tabs still applies.
 - Server-authoritative timers and progress cannot be accelerated.
 - Counter detection requires visible DOM text containing exactly one numeric

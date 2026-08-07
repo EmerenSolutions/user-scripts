@@ -11,7 +11,7 @@ progressive Japanese immersion, and itch.io browser games.
 | [Kanji Components](kanji-components/README.md) | Shows whole kanji used as visual components inside the current kanji. | WaniKani | `0.1.13` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js) |
 | [Review Forecast Open Today](review-forecast-open-today/README.md) | Opens today's hourly Review Forecast schedule on the dashboard. | WaniKani | `0.3.2` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/review-forecast-open-today/src/wanikani-review-forecast-open-today.user.js) |
 | [Progressive Japanese UI](japanese-ui/README.md) | Replaces eligible interface words with vocabulary already learned in WaniKani. | WaniKani, YouTube, Nexus Mods, Google Keep | `0.1.1` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js) |
-| [Universal Speed Control](universal-speed/README.md) | Adjusts browser timers and animation clocks with per-site controls. | itch.io games | `0.6.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/universal-speed/src/universal-speed-control.user.js) |
+| [Universal Speed Control](universal-speed/README.md) | Adjusts browser timers and animation clocks with per-site controls. | itch.io games, CrazyGames | `0.6.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/universal-speed/src/universal-speed-control.user.js) |
 
 ## Installation
 
