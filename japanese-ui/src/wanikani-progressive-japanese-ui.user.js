@@ -1,16 +1,12 @@
 // ==UserScript==
 // @name         Wanikani Progressive Japanese UI
 // @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.1.2
+// @version      0.1.3
 // @description  Replaces UI words with Japanese vocabulary learned in WaniKani
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
 // @license      MIT
-// @match        https://www.wanikani.com/*
-// @match        https://preview.wanikani.com/*
-// @match        https://www.youtube.com/*
-// @match        https://www.nexusmods.com/*
-// @match        https://keep.google.com/*
+// @match        *://*/*
 // @grant        GM_addElement
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -25,7 +21,7 @@
   'use strict';
 
   const SCRIPT_NAME = 'Wanikani Progressive Japanese UI';
-  const SCRIPT_VERSION = '0.1.1';
+  const SCRIPT_VERSION = '0.1.3';
   const CACHE_KEY = 'learned-vocabulary-cache-v1';
   const CACHE_SCHEMA_VERSION = 1;
   const MINIMUM_SRS_STAGE = 1;
@@ -669,6 +665,25 @@
     updateStatus();
   };
 
+  // Dynamic sites frequently replace whole UI subtrees. Forget translated
+  // nodes only after they are disconnected so same-document moves retain the
+  // original text needed by restoreTranslatedNodes.
+  const forgetDetachedTextNodes = (root, records = translatedNodes) => {
+    if (!root) return;
+    if (root.nodeType === 3) {
+      if (!root.isConnected) records.delete(root);
+      return;
+    }
+    if (root.nodeType !== 1 && root.nodeType !== 9 && root.nodeType !== 11) return;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node) {
+      if (!node.isConnected) records.delete(node);
+      node = walker.nextNode();
+    }
+  };
+
   const stopObserving = () => {
     observer?.disconnect();
     observer = null;
@@ -688,14 +703,17 @@
     processSubtree(document.body || document.documentElement);
 
     observer = new MutationObserver(mutations => {
+      const removedRoots = [];
       for (const mutation of mutations) {
         if (mutation.type === 'characterData') {
           processTextNode(mutation.target);
           continue;
         }
 
+        removedRoots.push(...mutation.removedNodes);
         for (const node of mutation.addedNodes) processSubtree(node);
       }
+      for (const root of removedRoots) forgetDetachedTextNodes(root);
       updateStatus();
     });
     observer.observe(document.documentElement, {
@@ -760,8 +778,8 @@
     );
   };
 
-  // WaniKani is the only API-backed host. Other allowlisted sites can read the
-  // vocabulary cache but never receive WKOF or the user's API token.
+  // WaniKani is the only API-backed host. Other sites can read the vocabulary
+  // cache but never receive WKOF or the user's API token.
   const initializeFromWaniKani = async () => {
     const learnedItems = await loadLearnedItems();
     const cache = createLearnedCache(learnedItems);
