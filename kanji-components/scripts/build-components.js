@@ -36,7 +36,7 @@ const normalizeComponent = new Map([
 ]);
 
 const isBmpHan = value => /^[\u4e00-\u9fff]$/u.test(value);
-const isKanjiLike = value => isBmpHan(normalizeComponent.get(value) || value);
+const isKanjiLike = value => /^\p{Unified_Ideograph}$/u.test(normalizeComponent.get(value) || value);
 
 const parseComponents = expression => {
   const components = [];
@@ -69,7 +69,7 @@ for (const line of fs.readFileSync(sourcePath, 'utf8').split(/\r?\n/u)) {
   if (separator === -1) continue;
 
   const character = trimmed.slice(0, separator);
-  if (!isBmpHan(character)) continue;
+  if (!isKanjiLike(character)) continue;
 
   const components = parseComponents(trimmed.slice(separator + 1));
   const filtered = components.filter(component => component.kanji !== character);
@@ -81,8 +81,32 @@ for (const line of fs.readFileSync(sourcePath, 'utf8').split(/\r?\n/u)) {
 
 const output = {};
 
-for (const [character, components] of direct.entries()) {
-  output[character] = components;
+// WaniKani's kanji are in the BMP, but their decomposition paths can pass
+// through supplementary-plane ideographs. Bundle only entries reachable from
+// BMP roots so those paths remain intact without shipping unrelated CJK data.
+const reachable = new Set();
+const collectReachable = character => {
+  if (reachable.has(character)) return;
+  reachable.add(character);
+
+  for (const component of direct.get(character) || []) {
+    collectReachable(component.kanji);
+  }
+};
+
+for (const character of direct.keys()) {
+  if (isBmpHan(character)) collectReachable(character);
+}
+
+for (const character of reachable) {
+  const components = direct.get(character);
+  if (components) {
+    // Most components have no alternate visible form. Store those as strings
+    // and reserve objects for aliases such as 人 displayed as 亻.
+    output[character] = components.map(component =>
+      component.form ? component : component.kanji
+    );
+  }
 }
 
 fs.writeFileSync(outputPath, `${JSON.stringify(output)}\n`);

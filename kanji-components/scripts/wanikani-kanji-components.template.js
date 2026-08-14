@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.13
+// @version      0.1.15
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -143,6 +143,8 @@ __CJK_DECOMP_LICENSE__
     );
 
   const normalizeEntry = entry => {
+    // Generated data uses strings for ordinary components and objects only
+    // when an alternate visible form must be retained.
     if (typeof entry === 'string') {
       return {
         kanji: entry,

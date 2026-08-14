@@ -106,6 +106,23 @@ test('generated Kanji Components userscript matches its template and data', () =
   assert.match(generated, /Apache License\s+\*\s+Version 2\.0/u);
 });
 
+test('Kanji Components retains supplementary ideographs in BMP decomposition paths', () => {
+  const components = JSON.parse(read('kanji-components/data/components.json'));
+
+  assert.deepEqual(components['歴'], ['𠩵', '止']);
+  assert.deepEqual(components['𠩵'], ['厂', '林']);
+  assert.deepEqual(components['林'], ['木']);
+});
+
+test('Kanji Components uses objects only for alternate visible forms', () => {
+  const components = JSON.parse(read('kanji-components/data/components.json'));
+
+  assert.deepEqual(components['億'], [
+    { kanji: '人', form: '亻' },
+    '意'
+  ]);
+});
+
 test('third-party data retains its license and repository notice', () => {
   assert.match(read('kanji-components/vendor/cjk-decomp/LICENSE'), /Apache License/u);
   assert.match(read('THIRD_PARTY_NOTICES.md'), /cjk-decomp/u);
