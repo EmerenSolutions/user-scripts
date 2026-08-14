@@ -9,7 +9,7 @@ The installable userscript is:
 src/wanikani-progressive-japanese-ui.user.js
 ```
 
-Current version: `0.1.2`.
+Current version: `0.1.3`.
 
 ## Behavior
 
@@ -26,9 +26,11 @@ Current version: `0.1.2`.
 - Translates exact UI labels and count-prefixed labels such as `10 Lessons`.
 - Watches dynamically rendered dashboard widgets and WaniKani Turbo
   navigation.
+- Releases tracking records when dynamic sites remove translated UI nodes, so
+  detached content does not accumulate during long sessions.
 - Avoids mnemonic, explanation, context-sentence, form, and code content.
-- Runs only on the private allowlist: WaniKani, YouTube, Nexus Mods, and
-  Google Keep.
+- Runs on every HTTP and HTTPS page. Browser-internal and extension pages do
+  not permit userscript injection.
 - Runs the translator and its learned-word cache inside Violentmonkey's
   isolated content context on every site.
 - Uses a short-lived WaniKani-only bridge to request minimized vocabulary and
@@ -46,7 +48,7 @@ The script does not request or store an API token itself.
 ## Install
 
 [Install Wanikani Progressive Japanese UI](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js),
-review the allowlisted sites and storage permissions, and confirm the
+review the all-site access and storage permissions, and confirm the
 installation in Violentmonkey.
 
 For local development, serve the script from the repository root over
@@ -63,7 +65,7 @@ http://127.0.0.1:8765/japanese-ui/src/wanikani-progressive-japanese-ui.user.js
 ```
 
 Reload WaniKani after installation to refresh the learned-word cache, then
-reload any allowlisted site. Visit WaniKani again after completing new lessons
+reload any other open page. Visit WaniKani again after completing new lessons
 to update the cache.
 
 ## Original reference

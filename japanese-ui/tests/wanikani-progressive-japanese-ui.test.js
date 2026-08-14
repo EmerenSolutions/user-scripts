@@ -22,6 +22,7 @@ const exposeInternals = SCRIPT_SOURCE.replace(
     collectLearnedVocabulary,
     createWkofBridgeSource,
     createLearnedCache,
+    forgetDetachedTextNodes,
     isUiTextNode,
     isValidLearnedCache,
     isWaniKaniHost,
@@ -51,16 +52,9 @@ vm.runInNewContext(exposeInternals, context, { filename: SCRIPT_PATH });
 
 const api = context.__japaneseUiTest;
 
-test('limits execution to WaniKani and the private site allowlist', () => {
-  for (const match of [
-    'https://www.wanikani.com/*',
-    'https://preview.wanikani.com/*',
-    'https://www.youtube.com/*',
-    'https://www.nexusmods.com/*',
-    'https://keep.google.com/*'
-  ]) {
-    assert.match(SCRIPT_SOURCE, new RegExp(`@match\\s+${match.replaceAll('.', '\\.')}`));
-  }
+test('runs on every HTTP and HTTPS page while restricting WKOF to WaniKani', () => {
+  const matches = [...SCRIPT_SOURCE.matchAll(/^\/\/ @match\s+(.+)$/gmu)];
+  assert.deepEqual(matches.map(match => match[1]), ['*://*/*']);
 
   assert.equal(api.isWaniKaniHost('www.wanikani.com'), true);
   assert.equal(api.isWaniKaniHost('preview.wanikani.com'), true);
@@ -379,4 +373,19 @@ test('limits replacements to UI-like elements and excludes explanations', () => 
     nodeType: 3,
     parentElement: makeParent({})
   }), false);
+});
+
+test('forgets removed translated nodes but retains nodes moved within the document', () => {
+  const removed = { nodeType: 3, isConnected: false };
+  const moved = { nodeType: 3, isConnected: true };
+  const records = new Map([
+    [removed, { original: 'Lessons', translated: '授業' }],
+    [moved, { original: 'Reviews', translated: '復習' }]
+  ]);
+
+  api.forgetDetachedTextNodes(removed, records);
+  api.forgetDetachedTextNodes(moved, records);
+
+  assert.equal(records.has(removed), false);
+  assert.equal(records.has(moved), true);
 });
