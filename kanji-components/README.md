@@ -1,4 +1,4 @@
-# WaniKani Kanji Components
+# Wanikani Kanji Components
 
 A WaniKani userscript that shows whole kanji used as visual components within the current kanji.
 
@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-kanji-components.user.js
 ```
 
-Current version: `0.1.15`.
+Current version: `0.1.16`.
 
 ## Behavior
 
@@ -18,7 +18,7 @@ Current version: `0.1.15`.
 - Shows nested components found inside those direct components.
 - Shows component forms when a kanji appears in a changed shape, such as `水 as 氵`.
 - Links displayed components to WaniKani kanji pages.
-- Uses WaniKani Open Framework to filter results to kanji that exist in WaniKani.
+- Uses Wanikani Open Framework to filter results to kanji that exist in WaniKani.
 - Adds a WaniKani script menu settings entry for enabling/disabling the script and each context.
 
 This script is separate from WaniKani radical mnemonics and reading/phonetic-series helpers.
@@ -27,11 +27,11 @@ This script is separate from WaniKani radical mnemonics and reading/phonetic-ser
 
 - The open-source [Violentmonkey](https://violentmonkey.github.io/) userscript
   manager.
-- WaniKani Open Framework is required so the component list can be filtered to WaniKani kanji.
+- Wanikani Open Framework is required so the component list can be filtered to WaniKani kanji.
 
 ## Install
 
-[Install Kanji Components](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js),
+[Install Wanikani Kanji Components](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js),
 review its WaniKani site access, and confirm the installation in Violentmonkey.
 
 ## Data Source

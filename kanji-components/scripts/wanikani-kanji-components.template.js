@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         WaniKani Kanji Components
+// @name         Wanikani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.15
+// @version      0.1.16
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -473,7 +473,7 @@ __CJK_DECOMP_LICENSE__
     if (!allowed) {
       const note = document.createElement('p');
       note.className = `${SCRIPT_ID}__note`;
-      note.textContent = 'WaniKani Open Framework is required to filter components to WaniKani kanji.';
+      note.textContent = 'Wanikani Open Framework is required to filter components to WaniKani kanji.';
       panel.appendChild(note);
     }
 

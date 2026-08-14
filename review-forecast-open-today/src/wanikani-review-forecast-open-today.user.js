@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         WaniKani Review Forecast Open Today
+// @name         Wanikani Review Forecast Open Today
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.3.2
+// @version      0.3.3
 // @description  Opens today's Review Forecast schedule on the WaniKani dashboard
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén

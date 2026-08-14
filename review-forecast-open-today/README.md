@@ -1,4 +1,4 @@
-# WaniKani Review Forecast Open Today
+# Wanikani Review Forecast Open Today
 
 A lightweight userscript that opens today's hourly Review Forecast schedule on
 the WaniKani dashboard.
@@ -9,7 +9,7 @@ The installable userscript is:
 src/wanikani-review-forecast-open-today.user.js
 ```
 
-Current version: `0.3.2`.
+Current version: `0.3.3`.
 
 ## Behavior
 
@@ -22,7 +22,7 @@ Current version: `0.3.2`.
 
 ## Install
 
-[Install Review Forecast Open Today](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/review-forecast-open-today/src/wanikani-review-forecast-open-today.user.js)
+[Install Wanikani Review Forecast Open Today](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/review-forecast-open-today/src/wanikani-review-forecast-open-today.user.js)
 with the open-source [Violentmonkey](https://violentmonkey.github.io/)
 userscript manager. Review the declared WaniKani site access before confirming.
 

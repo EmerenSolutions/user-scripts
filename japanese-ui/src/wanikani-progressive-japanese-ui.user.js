@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         WaniKani Progressive Japanese UI
+// @name         Wanikani Progressive Japanese UI
 // @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.1.1
+// @version      0.1.2
 // @description  Replaces UI words with Japanese vocabulary learned in WaniKani
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
 
-  const SCRIPT_NAME = 'WaniKani Progressive Japanese UI';
+  const SCRIPT_NAME = 'Wanikani Progressive Japanese UI';
   const SCRIPT_VERSION = '0.1.1';
   const CACHE_KEY = 'learned-vocabulary-cache-v1';
   const CACHE_SCHEMA_VERSION = 1;
@@ -526,7 +526,7 @@
 
     try {
       if (!window.wkof?.include || !window.wkof?.ready) {
-        throw new Error('WaniKani Open Framework is not available.');
+        throw new Error('Wanikani Open Framework is not available.');
       }
 
       window.wkof.include('ItemData');
@@ -709,7 +709,7 @@
     const responseEventName = createBridgeEventName();
     const timeout = setTimeout(() => {
       document.documentElement.removeEventListener(responseEventName, handleResponse);
-      reject(new Error('Timed out while waiting for WaniKani Open Framework.'));
+      reject(new Error('Timed out while waiting for Wanikani Open Framework.'));
     }, WKOF_BRIDGE_TIMEOUT_MS);
 
     const cleanup = () => {

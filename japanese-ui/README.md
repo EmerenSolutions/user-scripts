@@ -1,4 +1,4 @@
-# WaniKani Progressive Japanese UI
+# Wanikani Progressive Japanese UI
 
 Replaces selected interface labels with Japanese vocabulary learned through
 WaniKani.
@@ -9,7 +9,7 @@ The installable userscript is:
 src/wanikani-progressive-japanese-ui.user.js
 ```
 
-Current version: `0.1.1`.
+Current version: `0.1.2`.
 
 ## Behavior
 
@@ -38,14 +38,14 @@ Current version: `0.1.1`.
 ## Requirements
 
 - An open-source userscript manager such as Violentmonkey.
-- [WaniKani Open Framework](https://community.wanikani.com/t/28549), used to
+- [Wanikani Open Framework](https://community.wanikani.com/t/28549), used to
   read cached subject and assignment data from WaniKani's API.
 
 The script does not request or store an API token itself.
 
 ## Install
 
-[Install Progressive Japanese UI](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js),
+[Install Wanikani Progressive Japanese UI](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js),
 review the allowlisted sites and storage permissions, and confirm the
 installation in Violentmonkey.
 
