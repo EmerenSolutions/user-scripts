@@ -8,7 +8,7 @@ The installable userscript is:
 src/wanikani-kanji-components.user.js
 ```
 
-Current version: `0.1.13`.
+Current version: `0.1.15`.
 
 ## Behavior
 
@@ -36,7 +36,24 @@ review its WaniKani site access, and confirm the installation in Violentmonkey.
 
 ## Data Source
 
-Component data is generated from `cjk-decomp`, vendored under `vendor/cjk-decomp`.
+Component data is generated from `cjk-decomp`, vendored under
+`vendor/cjk-decomp`. The generated map is bundled in the userscript, so page
+loads do not query an external component database.
+
+The build keeps BMP ideographs used as roots and any supplementary-plane
+ideographs reachable through their decomposition paths. This preserves
+intermediate shapes such as the one connecting `歴` to `林` while excluding
+unrelated supplementary CJK data.
+
+To reduce the installed size, ordinary components are stored as strings.
+Objects are used only when an alternate visible form must also be retained:
+
+```json
+{
+  "歴": ["𠩵", "止"],
+  "億": [{"kanji":"人", "form":"亻"}, "意"]
+}
+```
 
 The source data is licensed under Apache-2.0. See:
 
@@ -52,6 +69,7 @@ Regenerate the component map and installable userscript with:
 npm run build:kanji-components
 ```
 
+The generated `data/components.json` and installable userscript are committed.
 Run the complete repository validation with `npm run check`.
 
 ## License
