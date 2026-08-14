@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         WaniKani Safe Auto Commit
+// @name         Wanikani Safe Auto Commit
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.10.9
+// @version      0.10.10
 // @description  Submits exact accepted answers in WaniKani reviews and lesson quizzes
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -255,7 +255,7 @@
   };
 
   const fail = (reason, detail) => {
-    console.error('[WaniKani Safe Auto Commit]', reason, detail ?? '');
+    console.error('[Wanikani Safe Auto Commit]', reason, detail ?? '');
 
     if (!settings.enabled || !isAllowedPage()) return;
     if (failed) return;
@@ -288,7 +288,7 @@
     });
 
     const text = document.createElement('span');
-    text.textContent = 'WaniKani Safe Auto Commit requires updating';
+    text.textContent = 'Wanikani Safe Auto Commit requires updating';
 
     const sub = document.createElement('span');
     sub.textContent = reason;
@@ -428,7 +428,7 @@
     expected = [...new Set(expected)];
 
     if (!expected.length) {
-      console.warn('[WaniKani Safe Auto Commit] empty-expected', {
+      console.warn('[Wanikani Safe Auto Commit] empty-expected', {
         questionType,
         subjectId,
         characters,
@@ -517,7 +517,7 @@
 
       scheduleMenuInstall();
     } catch (err) {
-      console.error('[WaniKani Safe Auto Commit] settings-load', err);
+      console.error('[Wanikani Safe Auto Commit] settings-load', err);
     }
   };
 
@@ -532,7 +532,7 @@
         on_click: openSettings
       });
     } catch (err) {
-      console.error('[WaniKani Safe Auto Commit] menu-install', err);
+      console.error('[Wanikani Safe Auto Commit] menu-install', err);
     }
   };
 

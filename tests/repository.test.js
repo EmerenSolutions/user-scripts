@@ -87,6 +87,13 @@ for (const script of scripts) {
   });
 }
 
+test('Wanikani userscripts follow the display-name standard', () => {
+  for (const script of scripts.filter(({ directory }) => directory !== 'universal-speed')) {
+    const metadata = parseMetadata(read(script.source));
+    assert.match(singleMetadataValue(metadata, 'name'), /^Wanikani\s\S/u);
+  }
+});
+
 test('generated Kanji Components userscript matches its template and data', () => {
   const template = read('kanji-components/scripts/wanikani-kanji-components.template.js');
   const components = read('kanji-components/data/components.json').trim();
