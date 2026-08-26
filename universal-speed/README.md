@@ -9,11 +9,11 @@ The installable userscript is:
 src/universal-speed-control.user.js
 ```
 
-Current version: `0.6.0`.
+Current version: `0.7.0`.
 
 ## Behavior
 
-- Runs at `document-start` only on itch.io pages, itch.io's HTML-game CDN,
+- Runs at `document-start` only on itch.io pages, itch.io's HTML-game CDNs,
   and CrazyGames pages, including embedded frames.
 - Starts at `1×` with every timing override disabled.
 - Can independently scale `setInterval`, `setTimeout`, `performance.now()`,
@@ -73,8 +73,9 @@ break unrelated UI, networking timeouts, or anti-abuse logic.
 
 - It affects the current page and its frames, but not Web Workers or
   Service Workers.
-- Its metadata currently includes `itch.io`, `*.itch.io`, `html-classic.itch.zone`,
-  `crazygames.com`, and `*.crazygames.com`. Add more explicit `@match` entries
+- Its metadata currently includes `itch.io`, `*.itch.io`, `html.itch.zone`,
+  `html-classic.itch.zone`, `crazygames.com`, and `*.crazygames.com`. Add more
+  explicit `@match` entries
   as needed.
 - Browser throttling in hidden/background tabs still applies.
 - Server-authoritative timers and progress cannot be accelerated.
