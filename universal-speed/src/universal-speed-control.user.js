@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Universal Speed Control
 // @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.6.0
+// @version      0.7.0
 // @description  Adjusts browser timers and animation clocks with per-site controls
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
 // @license      MIT
 // @match        https://itch.io/*
 // @match        https://*.itch.io/*
+// @match        https://html.itch.zone/*
 // @match        https://html-classic.itch.zone/*
 // @match        https://crazygames.com/*
 // @match        https://*.crazygames.com/*

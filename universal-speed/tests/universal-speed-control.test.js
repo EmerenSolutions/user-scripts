@@ -28,6 +28,7 @@ test('limits injection to itch.io and CrazyGames pages', () => {
   assert.deepEqual(matches, [
     'https://itch.io/*',
     'https://*.itch.io/*',
+    'https://html.itch.zone/*',
     'https://html-classic.itch.zone/*',
     'https://crazygames.com/*',
     'https://*.crazygames.com/*'
