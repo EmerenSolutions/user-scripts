@@ -23,6 +23,10 @@ const exposeInternals = SCRIPT_SOURCE.replace(
     createWkofBridgeSource,
     createLearnedCache,
     forgetDetachedTextNodes,
+    isAllowedPage,
+    initialize,
+    startObserving,
+    translatedNodes,
     isUiTextNode,
     isValidLearnedCache,
     isWaniKaniHost,
@@ -52,9 +56,16 @@ vm.runInNewContext(exposeInternals, context, { filename: SCRIPT_PATH });
 
 const api = context.__japaneseUiTest;
 
-test('runs on every HTTP and HTTPS page while restricting WKOF to WaniKani', () => {
+test('requests access only to the WaniKani dashboard', () => {
   const matches = [...SCRIPT_SOURCE.matchAll(/^\/\/ @match\s+(.+)$/gmu)];
-  assert.deepEqual(matches.map(match => match[1]), ['*://*/*']);
+  assert.deepEqual(matches.map(match => match[1]), [
+    'https://www.wanikani.com/',
+    'https://www.wanikani.com/?*',
+    'https://www.wanikani.com/dashboard',
+    'https://www.wanikani.com/dashboard?*',
+    'https://www.wanikani.com/dashboard/',
+    'https://www.wanikani.com/dashboard/?*'
+  ]);
 
   assert.equal(api.isWaniKaniHost('www.wanikani.com'), true);
   assert.equal(api.isWaniKaniHost('preview.wanikani.com'), true);
@@ -388,4 +399,69 @@ test('forgets removed translated nodes but retains nodes moved within the docume
 
   assert.equal(records.has(removed), false);
   assert.equal(records.has(moved), true);
+});
+
+
+test('allows dashboard URLs and rejects other pages and origins', () => {
+  for (const path of ['/', '/?test=1', '/#forecast', '/dashboard', '/dashboard/', '/dashboard?test=1']) {
+    assert.equal(api.isAllowedPage(new URL(`https://www.wanikani.com${path}`)), true, path);
+  }
+  for (const url of [
+    'https://www.wanikani.com/subjects/review',
+    'https://www.wanikani.com/lesson',
+    'https://www.wanikani.com/vocabulary/test',
+    'https://www.wanikani.com/settings',
+    'https://www.wanikani.com/dashboard/extra',
+    'https://www.wanikani.com/dashboard-other',
+    'https://preview.wanikani.com/',
+    'https://community.wanikani.com/',
+    'http://www.wanikani.com/',
+    'https://example.com/'
+  ]) {
+    assert.equal(api.isAllowedPage(new URL(url)), false, url);
+  }
+});
+
+test('does not initialize on an excluded page', async () => {
+  const isolated = { ...context, location: new URL('https://www.wanikani.com/subjects/review') };
+  isolated.window = isolated;
+  isolated.console = { error() { assert.fail('Initialization should not start'); } };
+  vm.runInNewContext(exposeInternals, isolated);
+  await isolated.__japaneseUiTest.initialize();
+});
+
+test('stops translating after navigation, restores labels, and resumes on the dashboard', () => {
+  let callback;
+  let disconnected = 0;
+  let observed = 0;
+  const isolated = {
+    ...context,
+    location: new URL('https://www.wanikani.com/'),
+    document: {
+      documentElement: { nodeType: 1 },
+      createTreeWalker() { return { nextNode() { return null; } }; }
+    },
+    MutationObserver: class {
+      constructor(handler) { callback = handler; }
+      disconnect() { disconnected += 1; }
+      observe() { observed += 1; }
+    }
+  };
+  isolated.window = isolated;
+  vm.runInNewContext(exposeInternals, isolated);
+  const runtime = isolated.__japaneseUiTest;
+  runtime.startObserving();
+  assert.equal(observed, 1);
+  const node = { nodeValue: '授業' };
+  runtime.translatedNodes.set(node, { original: 'Lessons', translated: '授業' });
+  isolated.location = new URL('https://www.wanikani.com/subjects/review');
+  callback([]);
+  assert.equal(disconnected, 1);
+  assert.equal(node.nodeValue, 'Lessons');
+  assert.equal(runtime.translatedNodes.size, 0);
+  runtime.startObserving();
+  assert.equal(observed, 1);
+  isolated.location = new URL('https://www.wanikani.com/dashboard');
+  runtime.startObserving();
+  assert.equal(observed, 2);
 });
