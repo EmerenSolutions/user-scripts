@@ -9,7 +9,7 @@ The installable userscript is:
 src/wanikani-progressive-japanese-ui.user.js
 ```
 
-Current version: `0.1.3`.
+Current version: `0.1.4`.
 
 ## Behavior
 
@@ -29,10 +29,13 @@ Current version: `0.1.3`.
 - Releases tracking records when dynamic sites remove translated UI nodes, so
   detached content does not accumulate during long sessions.
 - Avoids mnemonic, explanation, context-sentence, form, and code content.
-- Runs on every HTTP and HTTPS page. Browser-internal and extension pages do
-  not permit userscript injection.
+- Runs only on `https://www.wanikani.com/` and its `/dashboard` alias
+  (including a trailing slash, query parameters, or a fragment). Lessons,
+  reviews, subject pages, subdomains, and other websites are excluded.
+- Stops translating and restores original labels when Turbo navigation leaves
+  the dashboard.
 - Runs the translator and its learned-word cache inside Violentmonkey's
-  isolated content context on every site.
+  isolated content context on the dashboard.
 - Uses a short-lived WaniKani-only bridge to request minimized vocabulary and
   assignment data from WKOF, then removes the bridge. The API token is never
   copied or exposed to other sites.
@@ -48,7 +51,7 @@ The script does not request or store an API token itself.
 ## Install
 
 [Install Wanikani Progressive Japanese UI](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js),
-review the all-site access and storage permissions, and confirm the
+review the dashboard access and storage permissions, and confirm the
 installation in Violentmonkey.
 
 For local development, serve the script from the repository root over
@@ -64,9 +67,9 @@ Then open this URL in Firefox and install it with Violentmonkey:
 http://127.0.0.1:8765/japanese-ui/src/wanikani-progressive-japanese-ui.user.js
 ```
 
-Reload WaniKani after installation to refresh the learned-word cache, then
-reload any other open page. Visit WaniKani again after completing new lessons
-to update the cache.
+Reload the WaniKani dashboard after installation to apply the update and
+refresh the learned-word cache. Visit the dashboard again after completing
+new lessons to update the cache.
 
 ## Original reference
 

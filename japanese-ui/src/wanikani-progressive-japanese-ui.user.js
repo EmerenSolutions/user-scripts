@@ -1,12 +1,17 @@
 // ==UserScript==
 // @name         Wanikani Progressive Japanese UI
 // @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.1.3
+// @version      0.1.4
 // @description  Replaces UI words with Japanese vocabulary learned in WaniKani
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
 // @license      MIT
-// @match        *://*/*
+// @match        https://www.wanikani.com/
+// @match        https://www.wanikani.com/?*
+// @match        https://www.wanikani.com/dashboard
+// @match        https://www.wanikani.com/dashboard?*
+// @match        https://www.wanikani.com/dashboard/
+// @match        https://www.wanikani.com/dashboard/?*
 // @grant        GM_addElement
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -21,7 +26,7 @@
   'use strict';
 
   const SCRIPT_NAME = 'Wanikani Progressive Japanese UI';
-  const SCRIPT_VERSION = '0.1.3';
+  const SCRIPT_VERSION = '0.1.4';
   const CACHE_KEY = 'learned-vocabulary-cache-v1';
   const CACHE_SCHEMA_VERSION = 1;
   const MINIMUM_SRS_STAGE = 1;
@@ -491,6 +496,12 @@
     new Set(cache.learnedVocabulary)
   );
 
+  // Keep this allowlist in sync with the userscript metadata above.
+  const isAllowedPage = location => (
+    location.origin === 'https://www.wanikani.com'
+    && ['/', '/dashboard', '/dashboard/'].includes(location.pathname)
+  );
+
   const isWaniKaniHost = hostname => (
     hostname === 'www.wanikani.com' || hostname === 'preview.wanikani.com'
   );
@@ -699,10 +710,18 @@
   };
 
   const startObserving = () => {
+    if (!isAllowedPage(window.location)) {
+      restoreTranslatedNodes();
+      return;
+    }
     stopObserving();
     processSubtree(document.body || document.documentElement);
 
     observer = new MutationObserver(mutations => {
+      if (!isAllowedPage(window.location)) {
+        restoreTranslatedNodes();
+        return;
+      }
       const removedRoots = [];
       for (const mutation of mutations) {
         if (mutation.type === 'characterData') {
@@ -801,6 +820,8 @@
   };
 
   const initialize = async () => {
+    if (!isAllowedPage(window.location)) return;
+
     try {
       if (isWaniKaniHost(window.location.hostname)) {
         await initializeFromWaniKani();
