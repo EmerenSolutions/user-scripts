@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wanikani Progressive Japanese UI
 // @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.1.4
+// @version      0.2.0
 // @description  Replaces UI words with Japanese vocabulary learned in WaniKani
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -12,6 +12,10 @@
 // @match        https://www.wanikani.com/dashboard?*
 // @match        https://www.wanikani.com/dashboard/
 // @match        https://www.wanikani.com/dashboard/?*
+// @match        https://www.wanikani.com/subject-lessons/picker
+// @match        https://www.wanikani.com/subject-lessons/picker?*
+// @match        https://www.wanikani.com/subject-lessons/picker/
+// @match        https://www.wanikani.com/subject-lessons/picker/?*
 // @grant        GM_addElement
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -26,7 +30,7 @@
   'use strict';
 
   const SCRIPT_NAME = 'Wanikani Progressive Japanese UI';
-  const SCRIPT_VERSION = '0.1.4';
+  const SCRIPT_VERSION = '0.2.0';
   const CACHE_KEY = 'learned-vocabulary-cache-v1';
   const CACHE_SCHEMA_VERSION = 1;
   const MINIMUM_SRS_STAGE = 1;
@@ -499,7 +503,13 @@
   // Keep this allowlist in sync with the userscript metadata above.
   const isAllowedPage = location => (
     location.origin === 'https://www.wanikani.com'
-    && ['/', '/dashboard', '/dashboard/'].includes(location.pathname)
+    && [
+      '/',
+      '/dashboard',
+      '/dashboard/',
+      '/subject-lessons/picker',
+      '/subject-lessons/picker/'
+    ].includes(location.pathname)
   );
 
   const isWaniKaniHost = hostname => (

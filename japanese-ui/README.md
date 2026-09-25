@@ -9,7 +9,7 @@ The installable userscript is:
 src/wanikani-progressive-japanese-ui.user.js
 ```
 
-Current version: `0.1.4`.
+Current version: `0.2.0`.
 
 ## Behavior
 
@@ -24,18 +24,19 @@ Current version: `0.1.4`.
   `Today's Lessons` becomes `今日の Lessons` after learning `今日`, then
   `今日の授業` after also learning `授業`.
 - Translates exact UI labels and count-prefixed labels such as `10 Lessons`.
-- Watches dynamically rendered dashboard widgets and WaniKani Turbo
-  navigation.
+- Watches dynamically rendered dashboard and lesson picker content, and
+  WaniKani Turbo navigation.
 - Releases tracking records when dynamic sites remove translated UI nodes, so
   detached content does not accumulate during long sessions.
 - Avoids mnemonic, explanation, context-sentence, form, and code content.
-- Runs only on `https://www.wanikani.com/` and its `/dashboard` alias
-  (including a trailing slash, query parameters, or a fragment). Lessons,
-  reviews, subject pages, subdomains, and other websites are excluded.
+- Runs only on `https://www.wanikani.com/`, its `/dashboard` alias, and
+  `/subject-lessons/picker` (including trailing slashes, query parameters, or
+  fragments). Other lessons, reviews, subject pages, subdomains, and websites
+  are excluded.
 - Stops translating and restores original labels when Turbo navigation leaves
-  the dashboard.
+  those pages.
 - Runs the translator and its learned-word cache inside Violentmonkey's
-  isolated content context on the dashboard.
+  isolated content context on the dashboard and lesson picker.
 - Uses a short-lived WaniKani-only bridge to request minimized vocabulary and
   assignment data from WKOF, then removes the bridge. The API token is never
   copied or exposed to other sites.
@@ -51,7 +52,7 @@ The script does not request or store an API token itself.
 ## Install
 
 [Install Wanikani Progressive Japanese UI](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js),
-review the dashboard access and storage permissions, and confirm the
+review the WaniKani page access and storage permissions, and confirm the
 installation in Violentmonkey.
 
 For local development, serve the script from the repository root over
