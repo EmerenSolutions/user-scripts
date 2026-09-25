@@ -2,7 +2,7 @@
   "name": "user-scripts",
   "version": "0.0.0",
   "private": true,
-  "description": "Browser userscripts for WaniKani study tools, progressive Japanese immersion, and itch.io games",
+  "description": "Open-source browser userscripts for WaniKani reviews and Japanese immersion, game speed controls, and webtoon reading",
   "license": "MIT",
   "author": "Johan Emerén",
   "repository": {
@@ -16,6 +16,6 @@
     "build:kanji-components": "node kanji-components/scripts/build-components.js && node kanji-components/scripts/build-userscript.js",
     "check": "npm run check:syntax && npm test",
     "check:syntax": "node scripts/check-syntax.js",
-    "test": "node --test tests/*.test.js japanese-ui/tests/*.test.js review-forecast-open-today/tests/*.test.js universal-speed/tests/*.test.js"
+    "test": "node --test tests/*.test.js japanese-ui/tests/*.test.js review-forecast-open-today/tests/*.test.js universal-speed/tests/*.test.js webtoon-gap-trimmer/tests/*.test.js review-reorder/tests/*.test.js"
   }
 }

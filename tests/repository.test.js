@@ -10,6 +10,12 @@ const ROOT_README = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 
 const scripts = [
   {
+    directory: 'review-reorder',
+    source: 'review-reorder/src/wanikani-review-reorder.user.js',
+    namespace: REPOSITORY_URL,
+    license: 'MIT'
+  },
+  {
     directory: 'safe-auto-commit',
     source: 'safe-auto-commit/src/wanikani-safe-auto-commit.user.js',
     namespace: 'https://github.com/EmerenSolutions/wanikani-userscripts',
@@ -30,6 +36,12 @@ const scripts = [
   {
     directory: 'japanese-ui',
     source: 'japanese-ui/src/wanikani-progressive-japanese-ui.user.js',
+    namespace: REPOSITORY_URL,
+    license: 'MIT'
+  },
+  {
+    directory: 'webtoon-gap-trimmer',
+    source: 'webtoon-gap-trimmer/src/webtoon-gap-trimmer.user.js',
     namespace: REPOSITORY_URL,
     license: 'MIT'
   },
@@ -88,7 +100,7 @@ for (const script of scripts) {
 }
 
 test('Wanikani userscripts follow the display-name standard', () => {
-  for (const script of scripts.filter(({ directory }) => directory !== 'universal-speed')) {
+  for (const script of scripts.filter(({ directory }) => !['universal-speed', 'webtoon-gap-trimmer'].includes(directory))) {
     const metadata = parseMetadata(read(script.source));
     assert.match(singleMetadataValue(metadata, 'name'), /^Wanikani\s\S/u);
   }
