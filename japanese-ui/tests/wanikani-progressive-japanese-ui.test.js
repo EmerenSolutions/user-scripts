@@ -56,7 +56,7 @@ vm.runInNewContext(exposeInternals, context, { filename: SCRIPT_PATH });
 
 const api = context.__japaneseUiTest;
 
-test('requests access only to the WaniKani dashboard', () => {
+test('requests access only to the WaniKani dashboard and lesson picker', () => {
   const matches = [...SCRIPT_SOURCE.matchAll(/^\/\/ @match\s+(.+)$/gmu)];
   assert.deepEqual(matches.map(match => match[1]), [
     'https://www.wanikani.com/',
@@ -64,7 +64,11 @@ test('requests access only to the WaniKani dashboard', () => {
     'https://www.wanikani.com/dashboard',
     'https://www.wanikani.com/dashboard?*',
     'https://www.wanikani.com/dashboard/',
-    'https://www.wanikani.com/dashboard/?*'
+    'https://www.wanikani.com/dashboard/?*',
+    'https://www.wanikani.com/subject-lessons/picker',
+    'https://www.wanikani.com/subject-lessons/picker?*',
+    'https://www.wanikani.com/subject-lessons/picker/',
+    'https://www.wanikani.com/subject-lessons/picker/?*'
   ]);
 
   assert.equal(api.isWaniKaniHost('www.wanikani.com'), true);
@@ -402,8 +406,19 @@ test('forgets removed translated nodes but retains nodes moved within the docume
 });
 
 
-test('allows dashboard URLs and rejects other pages and origins', () => {
-  for (const path of ['/', '/?test=1', '/#forecast', '/dashboard', '/dashboard/', '/dashboard?test=1']) {
+test('allows dashboard and lesson picker URLs and rejects other pages and origins', () => {
+  for (const path of [
+    '/',
+    '/?test=1',
+    '/#forecast',
+    '/dashboard',
+    '/dashboard/',
+    '/dashboard?test=1',
+    '/subject-lessons/picker',
+    '/subject-lessons/picker/',
+    '/subject-lessons/picker?test=1',
+    '/subject-lessons/picker/#lessons'
+  ]) {
     assert.equal(api.isAllowedPage(new URL(`https://www.wanikani.com${path}`)), true, path);
   }
   for (const url of [
@@ -411,6 +426,8 @@ test('allows dashboard URLs and rejects other pages and origins', () => {
     'https://www.wanikani.com/lesson',
     'https://www.wanikani.com/vocabulary/test',
     'https://www.wanikani.com/settings',
+    'https://www.wanikani.com/subject-lessons/picker/extra',
+    'https://www.wanikani.com/subject-lessons/picker-other',
     'https://www.wanikani.com/dashboard/extra',
     'https://www.wanikani.com/dashboard-other',
     'https://preview.wanikani.com/',
@@ -430,7 +447,7 @@ test('does not initialize on an excluded page', async () => {
   await isolated.__japaneseUiTest.initialize();
 });
 
-test('stops translating after navigation, restores labels, and resumes on the dashboard', () => {
+test('stops translating after leaving allowed pages and resumes on an allowed page', () => {
   let callback;
   let disconnected = 0;
   let observed = 0;
