@@ -1,7 +1,7 @@
 # Browser Userscripts
 
 Open-source, dependency-light userscripts for WaniKani study tools,
-progressive Japanese immersion, browser games, and webtoon reading.
+progressive Japanese immersion, browser games, webtoon reading, and Salesforce.
 
 ## Scripts
 
@@ -14,9 +14,11 @@ progressive Japanese immersion, browser games, and webtoon reading.
 | [Wanikani Progressive Japanese UI](japanese-ui/README.md) | Replaces eligible interface words with vocabulary already learned in WaniKani. | WaniKani dashboard and lesson picker | `0.2.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/japanese-ui/src/wanikani-progressive-japanese-ui.user.js) |
 | [Universal Speed Control](universal-speed/README.md) | Adjusts browser timers and animation clocks with per-site controls. | itch.io games, CrazyGames | `0.7.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/universal-speed/src/universal-speed-control.user.js) |
 | [Webtoon Gap Trimmer](webtoon-gap-trimmer/README.md) | Shortens blank white bands inside chapter images. | MangaKakalot | `0.1.1` | [Install (beta)](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/webtoon-gap-trimmer/src/webtoon-gap-trimmer.user.js) |
+| [Salesforce Connection Popup Dismiss](salesforce-connection-popup/README.md) | Prevents App Builder's connection warning; dismisses matching fallback dialogs. | Salesforce Lightning and App Builder | `0.2.1` | [Install (beta)](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/salesforce-connection-popup/src/salesforce-connection-popup.user.js) |
 
-Wanikani Review Reorder and Webtoon Gap Trimmer are beta releases. See each
-script’s README for supported behavior and validation limits.
+Wanikani Review Reorder, Webtoon Gap Trimmer, and Salesforce Connection Popup
+Dismiss are beta releases. See each script’s README for supported behavior and
+validation limits.
 
 ## Installation
 
@@ -57,6 +59,9 @@ the current repository URL as their namespace.
   does not communicate with a remote service.
 - Webtoon Gap Trimmer analyzes pixels locally and may download existing chapter
   images from their CDN without cookies. It uploads no image data.
+- Salesforce Connection Popup Dismiss suppresses App Builder's dedicated offline
+  display handler and closes matching fallback dialogs. It makes no network
+  requests and stores no data.
 - Review a userscript's metadata and source before installing it. Report
   security concerns through GitHub's private vulnerability reporting.
 
@@ -93,6 +98,7 @@ user-scripts/
 ├── japanese-ui/
 ├── universal-speed/
 ├── webtoon-gap-trimmer/
+├── salesforce-connection-popup/
 ├── scripts/
 └── tests/
 ```

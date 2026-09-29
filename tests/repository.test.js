@@ -10,6 +10,12 @@ const ROOT_README = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 
 const scripts = [
   {
+    directory: 'salesforce-connection-popup',
+    source: 'salesforce-connection-popup/src/salesforce-connection-popup.user.js',
+    namespace: REPOSITORY_URL,
+    license: 'MIT'
+  },
+  {
     directory: 'review-reorder',
     source: 'review-reorder/src/wanikani-review-reorder.user.js',
     namespace: REPOSITORY_URL,
@@ -100,7 +106,7 @@ for (const script of scripts) {
 }
 
 test('Wanikani userscripts follow the display-name standard', () => {
-  for (const script of scripts.filter(({ directory }) => !['universal-speed', 'webtoon-gap-trimmer'].includes(directory))) {
+  for (const script of scripts.filter(({ source }) => path.basename(source).startsWith('wanikani-'))) {
     const metadata = parseMetadata(read(script.source));
     assert.match(singleMetadataValue(metadata, 'name'), /^Wanikani\s\S/u);
   }
