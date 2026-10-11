@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wanikani Safe Auto Commit
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.10.10
+// @version      1.0.0
 // @description  Submits exact accepted answers in WaniKani reviews and lesson quizzes
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -61,7 +61,8 @@
 
   let settings = { ...DEFAULT_SETTINGS };
   let sessionEnabled = true;
-  let locked = false;
+  let locked = null;
+  let activeQuestion = null;
   let failed = false;
   let expected = [];
   let synonyms = {};
@@ -76,6 +77,27 @@
   const getInput = () => $('#user-response');
   const getButton = () => $('.quiz-input__submit-button');
   const getFooter = () => $('.quiz-footer');
+  const getInputContainer = () => $('[data-quiz-input-target="inputContainer"]')
+    || $('.quiz-input__input-container');
+  const getQuizInputController = () => {
+    const element = $('[data-controller~="quiz-input"]');
+    try {
+      return element && window.Stimulus?.getControllerForElementAndIdentifier(element, 'quiz-input');
+    } catch {
+      return null;
+    }
+  };
+
+  const invalidateQuestion = () => {
+    activeQuestion = null;
+    expected = [];
+    locked = null;
+  };
+
+  const matchesNativeQuestion = (controller, question) =>
+    !!controller && !!question && question.subjectId != null
+    && String(getSubjectId({ subject: controller.currentSubject })) === String(question.subjectId)
+    && controller.currentQuestionType === question.questionType;
   const getToggleButton = () => $('#WANIKANI_SAFE_AUTOCOMMIT_TOGGLE');
 
   const isReviewPage = () =>
@@ -342,7 +364,7 @@
   // correct result. The lock prevents overlapping input events from clicking
   // either stage more than once.
   const submit = () => {
-    if (locked || failed || !shouldRun()) return;
+    if (locked || failed || !shouldRun() || !activeQuestion) return;
 
     const input = getInput();
     const button = getButton();
@@ -352,20 +374,36 @@
       return;
     }
 
-    if (!input.value.trim()) return;
+    const container = getInputContainer();
+    const controller = getQuizInputController();
+    const question = activeQuestion;
+    const value = normalize(input.value);
 
-    locked = true;
+    // Never turn an input event on an already graded answer into an advance.
+    if (!value || container?.getAttribute('correct') != null) return;
+    if (controller && !matchesNativeQuestion(controller, question)) return;
 
+    const submission = { question };
+    locked = submission;
     button.click();
 
     if (settings.autoAdvance) {
       setTimeout(() => {
+        if (locked !== submission || activeQuestion !== question
+          || failed || !shouldRun() || !settings.autoAdvance || composing) return;
+        if (getInput() !== input || getButton() !== button
+          || getInputContainer() !== container || !button.isConnected
+          || button.disabled || normalize(input.value) !== value) return;
+        if (getQuizInputController() !== controller
+          || !matchesNativeQuestion(controller, question)) return;
+        if (container?.getAttribute('correct') !== 'true') return;
+
         button.click();
       }, 80);
     }
 
     setTimeout(() => {
-      locked = false;
+      if (locked === submission) locked = null;
     }, 500);
   };
 
@@ -401,31 +439,32 @@
   // Prefer answer data delivered with the quiz event, then fall back to WKOF's
   // cached items and API data. An empty answer set always leaves submission to
   // the user instead of guessing.
-  const buildExpectedAnswers = async item => {
-    expected = [];
+  const buildExpectedAnswers = async (item, question) => {
     if (!isAllowedPage()) return;
 
-    const subject = item?.subject;
-    const subjectData = getSubjectData(subject);
-    const subjectId = getSubjectId(item);
-    const questionType = getQuestionType(item);
+    const subjectData = getSubjectData(item?.subject);
+    const { subjectId, questionType } = question;
     const characters = subjectData?.characters || getSubjectCharactersFromDom();
+    const isCurrent = () => activeQuestion === question && isAllowedPage();
 
     if (!isAllowedQuestionType(questionType)) return;
 
-    expected = collectExpectedAnswers(subjectData, subjectId, questionType);
+    let answers = collectExpectedAnswers(subjectData, subjectId, questionType);
 
-    if (!expected.length && (subjectId || characters)) {
+    if (!answers.length && (subjectId || characters)) {
       const wkofSubject = await loadSubjectFromWkof(subjectId, characters);
-      expected = collectExpectedAnswers(wkofSubject?.data || wkofSubject, subjectId, questionType);
+      if (!isCurrent()) return;
+      answers = collectExpectedAnswers(wkofSubject?.data || wkofSubject, subjectId, questionType);
     }
 
-    if (!expected.length && subjectId) {
+    if (!answers.length && subjectId) {
       const apiSubject = await loadSubjectFromWkofApi(subjectId);
-      expected = collectExpectedAnswers(apiSubject?.data || apiSubject, subjectId, questionType);
+      if (!isCurrent()) return;
+      answers = collectExpectedAnswers(apiSubject?.data || apiSubject, subjectId, questionType);
     }
 
-    expected = [...new Set(expected)];
+    if (!isCurrent()) return;
+    expected = [...new Set(answers)];
 
     if (!expected.length) {
       console.warn('[Wanikani Safe Auto Commit] empty-expected', {
@@ -434,7 +473,6 @@
         characters,
         item
       });
-      return;
     }
   };
 
@@ -550,7 +588,7 @@
       ...(window.wkof.settings?.[SCRIPT_ID] || {})
     };
 
-    expected = [];
+    invalidateQuestion();
     updateToggleButton();
     if (settings.showToggleButton && isAllowedPage()) {
       addToggleButton();
@@ -662,7 +700,7 @@
   };
 
   const activateCurrentPage = () => {
-    expected = [];
+    invalidateQuestion();
 
     if (!isAllowedPage()) {
       getToggleButton()?.remove();
@@ -686,6 +724,7 @@
 
   const startup = async () => {
     await loadSettings();
+    document.addEventListener('turbo:before-render', invalidateQuestion);
     document.addEventListener('turbo:load', handlePageChange);
     document.addEventListener('turbo:render', handlePageChange);
     window.addEventListener('popstate', handlePageChange);
@@ -698,19 +737,26 @@
   };
 
   window.addEventListener('willShowNextQuestion', async event => {
+    invalidateQuestion();
     if (!isAllowedPage()) {
-      expected = [];
       getToggleButton()?.remove();
       return;
     }
 
+    const question = {
+      subjectId: getSubjectId(event.detail),
+      questionType: getQuestionType(event.detail)
+    };
+    activeQuestion = question;
+
     try {
       loadSynonyms();
-      await buildExpectedAnswers(event.detail);
+      await buildExpectedAnswers(event.detail, question);
+      if (activeQuestion !== question) return;
       bindInput();
       addToggleButton();
     } catch (err) {
-      fail('willShowNextQuestion', err);
+      if (activeQuestion === question) fail('willShowNextQuestion', err);
     }
   });
 
