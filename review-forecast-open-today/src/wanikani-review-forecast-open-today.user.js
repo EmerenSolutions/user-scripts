@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wanikani Review Forecast Open Today
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.3.3
+// @version      1.0.0
 // @description  Opens today's Review Forecast schedule on the WaniKani dashboard
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -30,6 +30,8 @@
   ].join('');
   const DETAIL_CONTROLLER_SELECTOR = '[data-controller~="detail"]';
   const WEEKDAY_FORMATTER = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+  const FULL_WEEKDAY_FORMATTER = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+  const PANEL_WEEKDAY_SELECTOR = '.review-forecast-widget__day-header svg[title]';
 
   // A handled frame stays closed after a manual click until Turbo renders it again.
   const handledFrames = new WeakMap();
@@ -45,17 +47,29 @@
     const date = new Date();
     return {
       key: date.toDateString(),
-      label: WEEKDAY_FORMATTER.format(date)
+      label: WEEKDAY_FORMATTER.format(date),
+      fullLabel: FULL_WEEKDAY_FORMATTER.format(date)
     };
   };
-
-  const findTodayLink = (controller, today) =>
-    [...controller.querySelectorAll(FORECAST_LINK_SELECTOR)]
-      .find(link => link.textContent.replace(/\s+/gu, ' ').trim().startsWith(today));
 
   const getDetailPanel = (controller, link) => {
     const panelId = link.getAttribute('aria-controls');
     return panelId ? controller.querySelector(`#${CSS.escape(panelId)}`) : null;
+  };
+
+  const findTodayLink = (controller, today) => {
+    const links = [...controller.querySelectorAll(FORECAST_LINK_SELECTOR)];
+    const weekdays = new Map(links.map(link => [
+      link,
+      getDetailPanel(controller, link)?.querySelector(PANEL_WEEKDAY_SELECTOR)
+        ?.getAttribute('title')?.trim()
+    ]));
+
+    // The panel's icon title survives visible weekday translation. IDs are random,
+    // so neither IDs nor row order are used to infer the weekday.
+    return links.find(link => weekdays.get(link) === today.fullLabel)
+      || links.find(link => !weekdays.get(link)
+        && link.textContent.replace(/\s+/gu, ' ').trim().startsWith(today.label));
   };
 
   const openToday = frame => {
@@ -67,7 +81,7 @@
     const controller = frame.querySelector(DETAIL_CONTROLLER_SELECTOR);
     if (controller?.getAttribute('data-detail-connected-value') !== 'true') return false;
 
-    const link = findTodayLink(controller, today.label);
+    const link = findTodayLink(controller, today);
     if (!link) return false;
 
     const panel = getDetailPanel(controller, link);

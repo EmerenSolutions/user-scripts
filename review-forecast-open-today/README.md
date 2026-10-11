@@ -9,12 +9,14 @@ The installable userscript is:
 src/wanikani-review-forecast-open-today.user.js
 ```
 
-Current version: `0.3.3`.
+Current version: `1.0.0`.
 
 ## Behavior
 
 - Runs only on the WaniKani dashboard.
 - Opens the current weekday in the Review Forecast widget after it loads.
+- Uses the linked detail panel's weekday metadata, so translated weekday text
+  (including Progressive Japanese UI) does not prevent opening today's row.
 - Leaves the widget alone when today's schedule is already open.
 - Stays closed if you close it manually, until WaniKani reloads the widget.
 - Re-runs after WaniKani Turbo navigation and widget reloads.
@@ -42,6 +44,7 @@ download and update addresses to their current locations.
 ## Limitations
 
 - WaniKani markup changes can prevent the forecast row from opening.
+- If panel weekday metadata is absent, the fallback requires English row text.
 - The script does not alter, accelerate, or schedule reviews.
 - It does not run inside frames or outside the dashboard.
 
@@ -52,6 +55,16 @@ From the repository root, run:
 ```sh
 npm run check
 ```
+
+Regression tests cover translated weekdays, linked panel selection, already-open
+schedules, manual closure, and Turbo navigation and widget replacement. The live
+Firefox check on 2026-10-11 verified version `0.3.4` with Progressive Japanese UI
+active: automatic opening, manual closure across repeated Turbo events, widget
+reloads, Turbo history navigation, and leaving an open schedule unchanged.
+Japanese weekday text was also inserted before a real Turbo frame render to
+verify opening when translation precedes the lookup.
+Version `1.0.0` promotes this tested implementation to a full release without
+changing runtime behavior.
 
 ## License
 
