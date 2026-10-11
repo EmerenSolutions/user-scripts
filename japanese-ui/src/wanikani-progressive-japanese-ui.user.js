@@ -1,21 +1,12 @@
 // ==UserScript==
 // @name         Wanikani Progressive Japanese UI
 // @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.2.0
+// @version      1.0.0
 // @description  Replaces UI words with Japanese vocabulary learned in WaniKani
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
 // @license      MIT
-// @match        https://www.wanikani.com/
-// @match        https://www.wanikani.com/?*
-// @match        https://www.wanikani.com/dashboard
-// @match        https://www.wanikani.com/dashboard?*
-// @match        https://www.wanikani.com/dashboard/
-// @match        https://www.wanikani.com/dashboard/?*
-// @match        https://www.wanikani.com/subject-lessons/picker
-// @match        https://www.wanikani.com/subject-lessons/picker?*
-// @match        https://www.wanikani.com/subject-lessons/picker/
-// @match        https://www.wanikani.com/subject-lessons/picker/?*
+// @match        https://www.wanikani.com/*
 // @grant        GM_addElement
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -30,7 +21,7 @@
   'use strict';
 
   const SCRIPT_NAME = 'Wanikani Progressive Japanese UI';
-  const SCRIPT_VERSION = '0.2.0';
+  const SCRIPT_VERSION = '1.0.0';
   const CACHE_KEY = 'learned-vocabulary-cache-v1';
   const CACHE_SCHEMA_VERSION = 1;
   const MINIMUM_SRS_STAGE = 1;
@@ -79,11 +70,36 @@
     'option',
     'code',
     'pre',
-    '[contenteditable="true"]',
+    '[contenteditable]:not([contenteditable="false"])',
+    '[data-japanese-ui-ignore]',
+    '.subject-character',
+    '.subject-page-header__subject',
+    '.subject-section__content',
+    '.subject-section__text',
+    '.subject-subsection__content',
+    '.last-item__meanings',
+    '.last-item__readings',
     '[class*="context-sentence"]',
     '[class*="explanation"]',
     '[class*="mnemonic"]'
   ].join(',');
+  const FORECAST_SELECTOR = [
+    'turbo-frame[src*="/widgets/review-forecast"]',
+    'turbo-frame[data-dashboard-widget-url-value*="/widgets/review-forecast"]',
+    '[class*="review-forecast"]'
+  ].join(',');
+  const WEEKDAY_LABELS = new Map([
+    ['mon', 'monday'],
+    ['tue', 'tuesday'],
+    ['tues', 'tuesday'],
+    ['wed', 'wednesday'],
+    ['thu', 'thursday'],
+    ['thur', 'thursday'],
+    ['thurs', 'thursday'],
+    ['fri', 'friday'],
+    ['sat', 'saturday'],
+    ['sun', 'sunday']
+  ]);
   const TOKEN_STOP_WORDS = new Set([
     'a',
     'an',
@@ -129,6 +145,7 @@
     'your'
   ]);
   const AMBIGUOUS_MEANINGS = new Set([
+    'account',
     'about',
     'back',
     'down',
@@ -156,6 +173,7 @@
     { source: 'Hour', target: '時間', requires: ['時間'] },
     { source: 'Hours', target: '時間', requires: ['時間'] },
 
+    { source: 'Study', target: '勉強', requires: ['勉強'] },
     { source: 'Lesson', target: '授業', requires: ['授業'] },
     { source: 'Lessons', target: '授業', requires: ['授業'] },
     {
@@ -450,15 +468,19 @@
   };
 
   const applyTermRules = (activeTranslations, learnedVocabulary) => {
+    // Apply safety exclusions to older cached meaning maps as well.
+    for (const source of AMBIGUOUS_MEANINGS) activeTranslations.delete(source);
     for (const rule of TERM_RULES) {
       const variants = rule.variants || [rule];
       const activeVariant = variants.find(variant => (
         variant.requires.every(term => learnedVocabulary.has(term))
       ));
 
-      if (activeVariant) {
-        activeTranslations.set(normalizeSource(rule.source), activeVariant.target);
-      }
+      // Curated UI senses must not fall back to an unrelated learned meaning
+      // (for example Study -> research or Reading -> reading a book).
+      const source = normalizeSource(rule.source);
+      activeTranslations.delete(source);
+      if (activeVariant) activeTranslations.set(source, activeVariant.target);
     }
 
     return activeTranslations;
@@ -500,17 +522,30 @@
     new Set(cache.learnedVocabulary)
   );
 
-  // Keep this allowlist in sync with the userscript metadata above.
+  // Match the whole site so new browsing pages and Turbo visits work without
+  // adding URLs. Active study sessions remain excluded to protect quiz content.
   const isAllowedPage = location => (
     location.origin === 'https://www.wanikani.com'
-    && [
-      '/',
-      '/dashboard',
-      '/dashboard/',
-      '/subject-lessons/picker',
-      '/subject-lessons/picker/'
-    ].includes(location.pathname)
+    && !/^\/(?:review|reviews|lesson|lessons)(?:\/|$)/u.test(location.pathname)
+    && !/^\/subjects\/(?:review|extra_study|extra-study)(?:\/|$)/u.test(location.pathname)
+    && !(
+      /^\/subject-lessons(?:\/|$)/u.test(location.pathname)
+      && !/^\/subject-lessons\/picker\/?$/u.test(location.pathname)
+    )
   );
+
+  // A URL fallback also protects subject links supplied by other scripts or
+  // future card markup, while category navigation (/kanji, etc.) stays eligible.
+  const isSubjectLink = href => {
+    if (typeof href !== 'string' || !href) return false;
+    try {
+      const url = new URL(href, 'https://www.wanikani.com/');
+      return url.origin === 'https://www.wanikani.com'
+        && /^\/(?:kanji|radicals|vocabulary|kana-vocabulary)\/[^/]+\/?$/u.test(url.pathname);
+    } catch {
+      return false;
+    }
+  };
 
   const isWaniKaniHost = hostname => (
     hostname === 'www.wanikani.com' || hostname === 'preview.wanikani.com'
@@ -613,7 +648,19 @@
     }
   );
 
-  const translateCoreText = (core, activeTranslations = translations) => {
+  const translateCoreText = (core, activeTranslations = translations, context = {}) => {
+    // Forecast dates use English weekday abbreviations, not ordinary meanings.
+    // Protect the label even when its weekday vocabulary has not been learned.
+    const weekdayMatch = context.forecast
+      ? core.match(/^(Mon|Tues?|Wed|Thurs?|Thu|Fri|Sat|Sun)\.?(?=$|[\s,])/iu)
+      : null;
+    if (weekdayMatch) {
+      const weekday = WEEKDAY_LABELS.get(normalizeSource(weekdayMatch[1]));
+      const target = activeTranslations.get(weekday);
+      const suffix = core.slice(weekdayMatch[0].length);
+      return (target || weekdayMatch[0]) + translateEnglishWords(suffix, activeTranslations);
+    }
+
     const direct = activeTranslations.get(normalizeSource(core));
     if (direct) return direct;
 
@@ -626,12 +673,12 @@
     return translateEnglishWords(core, activeTranslations);
   };
 
-  const translateText = (value, activeTranslations = translations) => {
+  const translateText = (value, activeTranslations = translations, context = {}) => {
     const raw = String(value ?? '');
     const match = raw.match(/^(\s*)(.*?)(\s*)$/su);
     if (!match) return raw;
 
-    const translated = translateCoreText(match[2], activeTranslations);
+    const translated = translateCoreText(match[2], activeTranslations, context);
     return translated === match[2]
       ? raw
       : `${match[1]}${translated}${match[3]}`;
@@ -640,6 +687,8 @@
   const isUiTextNode = node => {
     if (!node || node.nodeType !== 3 || !node.parentElement) return false;
     if (node.parentElement.closest(EXCLUDED_SELECTOR)) return false;
+    const link = node.parentElement.closest('a[href]');
+    if (isSubjectLink(link?.getAttribute?.('href'))) return false;
     return Boolean(
       node.parentElement.closest(UI_ANCESTOR_SELECTOR)
       || node.parentElement.matches(UI_DIRECT_SELECTOR)
@@ -655,14 +704,20 @@
   const processTextNode = node => {
     const previous = translatedNodes.get(node);
     if (previous) {
-      if (node.nodeValue === previous.translated) return;
+      if (node.nodeValue === previous.translated) {
+        if (isUiTextNode(node)) return;
+        // A host can move translated UI text into a protected subject card.
+        node.nodeValue = previous.original;
+      }
       translatedNodes.delete(node);
     }
 
     if (!isUiTextNode(node)) return;
 
     const original = node.nodeValue;
-    const translated = translateText(original);
+    const translated = translateText(original, translations, {
+      forecast: Boolean(node.parentElement.closest(FORECAST_SELECTOR))
+    });
     if (translated === original) return;
 
     translatedNodes.set(node, { original, translated });
@@ -734,6 +789,10 @@
       }
       const removedRoots = [];
       for (const mutation of mutations) {
+        if (mutation.type === 'attributes') {
+          processSubtree(mutation.target);
+          continue;
+        }
         if (mutation.type === 'characterData') {
           processTextNode(mutation.target);
           continue;
@@ -746,6 +805,8 @@
       updateStatus();
     });
     observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'href', 'contenteditable', 'data-japanese-ui-ignore'],
       characterData: true,
       childList: true,
       subtree: true
@@ -790,11 +851,10 @@
     }
   });
 
-  const activateTranslations = cache => {
+  const activateTranslations = (cache, source = 'wkof') => {
+    restoreTranslatedNodes();
     translations = buildTranslationsFromCache(cache);
-    runtimeStatus.source = isWaniKaniHost(window.location.hostname)
-      ? 'wkof'
-      : 'cache';
+    runtimeStatus.source = source;
     runtimeStatus.lastSyncedAt = cache.savedAt;
     runtimeStatus.learnedItems = cache.learnedItems;
     runtimeStatus.learnedMeanings = cache.learnedMeanings.length;
@@ -807,8 +867,7 @@
     );
   };
 
-  // WaniKani is the only API-backed host. Other sites can read the vocabulary
-  // cache but never receive WKOF or the user's API token.
+  // Refresh the learned vocabulary through the narrow WaniKani-only bridge.
   const initializeFromWaniKani = async () => {
     const learnedItems = await loadLearnedItems();
     const cache = createLearnedCache(learnedItems);
@@ -816,32 +875,20 @@
     activateTranslations(cache);
   };
 
-  const initializeFromCache = () => {
-    const cache = GM_getValue(CACHE_KEY, null);
-    if (!isValidLearnedCache(cache)) {
-      console.warn(
-        `[${SCRIPT_NAME}] No learned-vocabulary cache yet. `
-        + 'Open WaniKani once to sync through WKOF.'
-      );
-      return;
-    }
-
-    activateTranslations(cache);
-  };
-
   const initialize = async () => {
-    if (!isAllowedPage(window.location)) return;
+    if (window.location.origin !== 'https://www.wanikani.com') return;
+
+    // Register before fetching: navigation can finish while WKOF is pending.
+    // Even a document opened in a quiz must resume on a later browsing visit.
+    document.addEventListener('turbo:before-cache', restoreTranslatedNodes);
+    document.addEventListener('turbo:load', startObserving);
 
     try {
-      if (isWaniKaniHost(window.location.hostname)) {
-        await initializeFromWaniKani();
-        document.addEventListener('turbo:before-cache', restoreTranslatedNodes);
-        document.addEventListener('turbo:load', startObserving);
-      } else {
-        initializeFromCache();
-      }
+      const cache = GM_getValue(CACHE_KEY, null);
+      if (isValidLearnedCache(cache)) activateTranslations(cache, 'cache');
+      await initializeFromWaniKani();
     } catch (error) {
-      console.error(`[${SCRIPT_NAME}] Failed to initialize.`, error);
+      console.error(`[${SCRIPT_NAME}] Failed to refresh learned vocabulary.`, error);
     }
   };
 

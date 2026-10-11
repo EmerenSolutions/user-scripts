@@ -15,6 +15,8 @@ const SCRIPT_SOURCE = fs.readFileSync(SCRIPT_PATH, 'utf8');
 const exposeInternals = SCRIPT_SOURCE.replace(
   '  void initialize();\n})();',
   `  window.__japaneseUiTest = {
+    activateTranslations,
+    restoreTranslatedNodes,
     buildLearnedMeaningTranslations,
     buildTranslations,
     buildTranslationsFromCache,
@@ -24,6 +26,7 @@ const exposeInternals = SCRIPT_SOURCE.replace(
     createLearnedCache,
     forgetDetachedTextNodes,
     isAllowedPage,
+    isSubjectLink,
     initialize,
     startObserving,
     translatedNodes,
@@ -49,27 +52,17 @@ const context = {
   Object,
   Set,
   String,
-  WeakMap
+  WeakMap,
+  URL
 };
 context.window = context;
 vm.runInNewContext(exposeInternals, context, { filename: SCRIPT_PATH });
 
 const api = context.__japaneseUiTest;
 
-test('requests access only to the WaniKani dashboard and lesson picker', () => {
+test('requests access to WaniKani browsing pages through one site match', () => {
   const matches = [...SCRIPT_SOURCE.matchAll(/^\/\/ @match\s+(.+)$/gmu)];
-  assert.deepEqual(matches.map(match => match[1]), [
-    'https://www.wanikani.com/',
-    'https://www.wanikani.com/?*',
-    'https://www.wanikani.com/dashboard',
-    'https://www.wanikani.com/dashboard?*',
-    'https://www.wanikani.com/dashboard/',
-    'https://www.wanikani.com/dashboard/?*',
-    'https://www.wanikani.com/subject-lessons/picker',
-    'https://www.wanikani.com/subject-lessons/picker?*',
-    'https://www.wanikani.com/subject-lessons/picker/',
-    'https://www.wanikani.com/subject-lessons/picker/?*'
-  ]);
+  assert.deepEqual(matches.map(match => match[1]), ['https://www.wanikani.com/*']);
 
   assert.equal(api.isWaniKaniHost('www.wanikani.com'), true);
   assert.equal(api.isWaniKaniHost('preview.wanikani.com'), true);
@@ -307,7 +300,7 @@ test('derives UI translations from meanings on learned vocabulary', () => {
   );
 
   assert.equal(api.translateText('Next 24 Hours', translations), 'Next 24 時間');
-  assert.equal(api.translateText('Extra Study', translations), 'Extra 研究');
+  assert.equal(api.translateText('Extra Study', translations), 'Extra Study');
 });
 
 test('round-trips learned vocabulary through the cross-site cache', () => {
@@ -406,7 +399,7 @@ test('forgets removed translated nodes but retains nodes moved within the docume
 });
 
 
-test('allows dashboard and lesson picker URLs and rejects other pages and origins', () => {
+test('allows WaniKani browsing pages and rejects active study sessions and other origins', () => {
   for (const path of [
     '/',
     '/?test=1',
@@ -417,19 +410,27 @@ test('allows dashboard and lesson picker URLs and rejects other pages and origin
     '/subject-lessons/picker',
     '/subject-lessons/picker/',
     '/subject-lessons/picker?test=1',
-    '/subject-lessons/picker/#lessons'
+    '/subject-lessons/picker/#lessons',
+    '/kanji?difficulty=pleasant',
+    '/radicals',
+    '/vocabulary',
+    '/level/1',
+    '/kanji/山',
+    '/radicals/barb',
+    '/vocabulary/山',
+    '/settings',
+    '/new-browsing-page'
   ]) {
     assert.equal(api.isAllowedPage(new URL(`https://www.wanikani.com${path}`)), true, path);
   }
   for (const url of [
     'https://www.wanikani.com/subjects/review',
     'https://www.wanikani.com/lesson',
-    'https://www.wanikani.com/vocabulary/test',
-    'https://www.wanikani.com/settings',
     'https://www.wanikani.com/subject-lessons/picker/extra',
-    'https://www.wanikani.com/subject-lessons/picker-other',
-    'https://www.wanikani.com/dashboard/extra',
-    'https://www.wanikani.com/dashboard-other',
+    'https://www.wanikani.com/subjects/extra_study',
+    'https://www.wanikani.com/review/session',
+    'https://www.wanikani.com/lessons',
+    'https://www.wanikani.com/subject-lessons/start',
     'https://preview.wanikani.com/',
     'https://community.wanikani.com/',
     'http://www.wanikani.com/',
@@ -439,8 +440,8 @@ test('allows dashboard and lesson picker URLs and rejects other pages and origin
   }
 });
 
-test('does not initialize on an excluded page', async () => {
-  const isolated = { ...context, location: new URL('https://www.wanikani.com/subjects/review') };
+test('does not initialize on a different origin', async () => {
+  const isolated = { ...context, location: new URL('https://example.com/') };
   isolated.window = isolated;
   isolated.console = { error() { assert.fail('Initialization should not start'); } };
   vm.runInNewContext(exposeInternals, isolated);
@@ -481,4 +482,254 @@ test('stops translating after leaving allowed pages and resumes on an allowed pa
   isolated.location = new URL('https://www.wanikani.com/dashboard');
   runtime.startObserving();
   assert.equal(observed, 2);
+});
+
+
+test('uses the curated study sense only after the study vocabulary is learned', () => {
+  const items = [vocabulary('研究', {
+    meanings: [{ meaning: 'Study', primary: true, accepted_answer: true }]
+  })];
+  const cache = api.createLearnedCache(items);
+  assert.equal(api.translateText('Study', api.buildTranslationsFromCache(cache)), 'Study');
+  assert.equal(api.translateText('Extra Study', api.buildTranslations(new Set(['勉強']))), 'Extra 勉強');
+});
+
+test('rejects an unrelated meaning for a curated UI label', () => {
+  const items = [vocabulary('読書', {
+    meanings: [{ meaning: 'Reading', primary: true, accepted_answer: true }]
+  })];
+  const translations = api.buildTranslations(api.collectLearnedVocabulary(items), items);
+  assert.equal(api.translateText('Reading', translations), 'Reading');
+  assert.equal(api.translateText('Readings', translations), 'Readings');
+});
+
+test('translates all forecast weekday abbreviations through weekday vocabulary', () => {
+  const weekdays = [
+    ['Mon', '月曜日'], ['Tue', '火曜日'], ['Wed', '水曜日'],
+    ['Thu', '木曜日'], ['Fri', '金曜日'], ['Sat', '土曜日'], ['Sun', '日曜日']
+  ];
+  const translations = api.buildTranslations(new Set(weekdays.map(([, target]) => target)));
+  translations.set('sun', '太陽');
+  translations.set('sat', '座った');
+  for (const [source, target] of weekdays) {
+    assert.equal(api.translateText(source, translations, { forecast: true }), target);
+    assert.equal(api.translateText(`  ${source}. 11 Oct\n`, translations, { forecast: true }), `  ${target} 11 Oct\n`);
+  }
+  assert.equal(api.translateText('tues', translations, { forecast: true }), '火曜日');
+  assert.equal(api.translateText('Thurs, 15', translations, { forecast: true }), '木曜日, 15');
+});
+
+test('keeps an unlearned forecast weekday English even when its ordinary meaning is learned', () => {
+  const cache = api.createLearnedCache([vocabulary('太陽', {
+    meanings: [{ meaning: 'Sun', primary: true, accepted_answer: true }]
+  })]);
+  const translations = api.buildTranslationsFromCache(cache);
+  assert.equal(api.translateText('Sun', translations, { forecast: true }), 'Sun');
+  assert.equal(api.translateText('Sun 11 Oct', translations, { forecast: true }), 'Sun 11 Oct');
+  assert.equal(api.translateText('Sun', translations), '太陽');
+  assert.equal(api.translateText('Sunshine', translations, { forecast: true }), 'Sunshine');
+});
+
+const createRuntime = () => {
+  let callback;
+  const nodes = [];
+  const parent = {
+    closest(selector) {
+      if (selector.includes('explanation')) return null;
+      if (selector.includes('widgets/review-forecast')) return this.forecast ? this : null;
+      return this;
+    },
+    matches() { return false; }
+  };
+  const isolated = {
+    ...context,
+    console: { info() {} },
+    location: new URL('https://www.wanikani.com/dashboard'),
+    document: {
+      documentElement: { nodeType: 1 },
+      createTreeWalker(root) {
+        const entries = root.nodes || nodes;
+        let index = 0;
+        return { nextNode() { return entries[index++] || null; } };
+      }
+    },
+    MutationObserver: class {
+      constructor(handler) { callback = handler; }
+      disconnect() {}
+      observe() {}
+    }
+  };
+  isolated.window = isolated;
+  vm.runInNewContext(exposeInternals, isolated);
+  return {
+    isolated,
+    runtime: isolated.__japaneseUiTest,
+    nodes,
+    add(text, forecast = false) {
+      const node = {
+        nodeType: 3, nodeValue: text, isConnected: true,
+        parentElement: { ...parent, forecast }
+      };
+      nodes.push(node);
+      return node;
+    },
+    mutate(records) { callback(records); }
+  };
+};
+
+test('applies forecast context to initial and dynamically inserted text without changing controls', () => {
+  const harness = createRuntime();
+  const initial = harness.add('Sun', true);
+  // The script only changes text nodes; link attributes and click handlers stay intact.
+  const click = () => {};
+  initial.parentElement.href = '#forecast-content-0';
+  initial.parentElement.onclick = click;
+  harness.runtime.activateTranslations(api.createLearnedCache([vocabulary('日曜日')]));
+  assert.equal(initial.nodeValue, '日曜日');
+  assert.equal(initial.parentElement.href, '#forecast-content-0');
+  assert.equal(initial.parentElement.onclick, click);
+  const dynamic = harness.add('Sun 11 Oct', true);
+  harness.mutate([{ type: 'childList', addedNodes: [dynamic], removedNodes: [] }]);
+  assert.equal(dynamic.nodeValue, '日曜日 11 Oct');
+  harness.runtime.restoreTranslatedNodes();
+  assert.equal(initial.nodeValue, 'Sun');
+  assert.equal(dynamic.nodeValue, 'Sun 11 Oct');
+});
+
+test('restores Turbo cache text and resumes across dashboard and lesson picker navigation', () => {
+  const harness = createRuntime();
+  const node = harness.add('Lessons');
+  harness.runtime.activateTranslations(api.createLearnedCache([vocabulary('授業'), vocabulary('復習')]));
+  assert.equal(node.nodeValue, '授業');
+  harness.runtime.restoreTranslatedNodes();
+  assert.equal(node.nodeValue, 'Lessons');
+  harness.isolated.location = new URL('https://www.wanikani.com/subject-lessons/picker');
+  harness.runtime.startObserving();
+  assert.equal(node.nodeValue, '授業');
+  node.nodeValue = 'Reviews';
+  harness.mutate([{ type: 'characterData', target: node }]);
+  assert.equal(node.nodeValue, '復習');
+  harness.isolated.location = new URL('https://www.wanikani.com/subjects/review');
+  harness.mutate([]);
+  assert.equal(node.nodeValue, 'Reviews');
+  assert.equal(harness.runtime.translatedNodes.size, 0);
+  harness.isolated.location = new URL('https://www.wanikani.com/dashboard');
+  harness.runtime.startObserving();
+  assert.equal(node.nodeValue, '復習');
+});
+
+test('preserves host text updates during restoration', () => {
+  const harness = createRuntime();
+  const node = harness.add('Lessons');
+  harness.runtime.activateTranslations(api.createLearnedCache([vocabulary('授業')]));
+  node.nodeValue = 'Host replacement';
+  harness.runtime.restoreTranslatedNodes();
+  assert.equal(node.nodeValue, 'Host replacement');
+});
+
+
+test('protects subject links while keeping category and level navigation eligible', () => {
+  for (const href of ['/kanji/山', '/radicals/barb', '/vocabulary/大きい', '/kana-vocabulary/はい',
+    'https://www.wanikani.com/kanji/山/?test=1#meaning']) {
+    assert.equal(api.isSubjectLink(href), true, href);
+  }
+  for (const href of ['/kanji', '/kanji/?difficulty=pleasant', '/level/1', '/vocabulary',
+    'https://example.com/kanji/山', '#meaning', null]) {
+    assert.equal(api.isSubjectLink(href), false, String(href));
+  }
+});
+
+test('protects a subject link even without the standard card class', () => {
+  const node = { nodeType: 3, parentElement: {
+    closest(selector) {
+      if (selector.includes('explanation')) return null;
+      if (selector === 'a[href]') return { getAttribute() { return '/radicals/barb'; } };
+      return this;
+    }
+  } };
+  assert.equal(api.isUiTextNode(node), false);
+});
+
+test('restores a translated label when moved into protected study content', () => {
+  const harness = createRuntime();
+  const node = harness.add('Name');
+  harness.runtime.activateTranslations(api.createLearnedCache([vocabulary('名前')]));
+  assert.equal(node.nodeValue, '名前');
+  const originalClosest = node.parentElement.closest;
+  node.parentElement.closest = function(selector) {
+    if (selector.includes('.subject-character')) return this;
+    return originalClosest.call(this, selector);
+  };
+  harness.mutate([{ type: 'childList', addedNodes: [node], removedNodes: [node] }]);
+  assert.equal(node.nodeValue, 'Name');
+  assert.equal(harness.runtime.translatedNodes.size, 0);
+});
+
+test('restores text when its parent becomes a protected component', () => {
+  const harness = createRuntime();
+  const node = harness.add('Name');
+  harness.runtime.activateTranslations(api.createLearnedCache([vocabulary('名前')]));
+  node.parentElement.closest = selector => selector.includes('.subject-character') ? node.parentElement : null;
+  harness.mutate([{ type: 'attributes', target: { nodeType: 1, nodes: [node] } }]);
+  assert.equal(node.nodeValue, 'Name');
+});
+
+test('refreshes existing translated nodes when learned vocabulary changes', () => {
+  const harness = createRuntime();
+  const node = harness.add('Review Forecast');
+  harness.runtime.activateTranslations(api.createLearnedCache([vocabulary('復習')]));
+  assert.equal(node.nodeValue, '復習 Forecast');
+  harness.runtime.activateTranslations(api.createLearnedCache([vocabulary('復習'), vocabulary('予報')]));
+  assert.equal(node.nodeValue, '復習予報');
+});
+
+
+test('protects card meanings and subject-detail sections even inside UI-like ancestors', () => {
+  for (const component of ['.subject-character', '.subject-page-header__subject',
+    '.subject-section__content', '.subject-subsection__content', '.last-item__meanings']) {
+    const node = { nodeType: 3, parentElement: {
+      closest(selector) {
+        if (selector.split(',').includes(component)) return this;
+        if (selector.includes('explanation') || selector === 'a[href]') return null;
+        return this;
+      }
+    } };
+    assert.equal(api.isUiTextNode(node), false, component);
+  }
+});
+
+test('registers Turbo handling before refresh and resumes after starting in a quiz', async () => {
+  const harness = createRuntime();
+  const node = harness.add('Lessons');
+  const events = new Map();
+  const isolated = harness.isolated;
+  isolated.location = new URL('https://www.wanikani.com/subjects/review');
+  isolated.document.addEventListener = (name, handler) => events.set(name, handler);
+  isolated.GM_getValue = () => api.createLearnedCache([vocabulary('授業')]);
+  let finishRefresh;
+  isolated.syncForTest = () => new Promise(resolve => { finishRefresh = resolve; });
+  vm.runInNewContext(exposeInternals.replace('await initializeFromWaniKani();', 'await window.syncForTest();'), isolated);
+  const pending = isolated.__japaneseUiTest.initialize();
+  assert.equal(node.nodeValue, 'Lessons');
+  assert.equal(events.has('turbo:before-cache'), true);
+  assert.equal(events.has('turbo:load'), true);
+  isolated.location = new URL('https://www.wanikani.com/level/1');
+  events.get('turbo:load')();
+  assert.equal(node.nodeValue, '授業');
+  events.get('turbo:before-cache')();
+  assert.equal(node.nodeValue, 'Lessons');
+  finishRefresh();
+  await pending;
+});
+
+
+test('keeps the software Account label English, including older cached meaning maps', () => {
+  const items = [vocabulary('記事', {
+    meanings: [{ meaning: 'Account', primary: false, accepted_answer: true }]
+  })];
+  const fresh = api.buildTranslations(api.collectLearnedVocabulary(items), items);
+  assert.equal(api.translateText('Account', fresh), 'Account');
+  const cache = api.createLearnedCache(items);
+  cache.learnedMeanings.push(['account', '記事']);
+  assert.equal(api.translateText('Account', api.buildTranslationsFromCache(cache)), 'Account');
 });
