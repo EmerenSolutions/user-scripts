@@ -7,7 +7,7 @@ progressive Japanese immersion, browser games, webtoon reading, and Salesforce.
 
 | Script | Purpose | Runs on | Version | Install |
 | --- | --- | --- | --- | --- |
-| [Wanikani Review Reorder](review-reorder/README.md) | Groups randomized reviews by type, with meaning first and immediate retries. | WaniKani reviews | `0.1.0` | [Install (beta)](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/review-reorder/src/wanikani-review-reorder.user.js) |
+| [Wanikani Review Reorder](review-reorder/README.md) | Groups randomized reviews by type, with meaning first and immediate retries. | WaniKani reviews | `1.0.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/review-reorder/src/wanikani-review-reorder.user.js) |
 | [Wanikani Safe Auto Commit](safe-auto-commit/README.md) | Submits only exact accepted answers during supported WaniKani quizzes. | WaniKani | `0.10.10` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/safe-auto-commit/src/wanikani-safe-auto-commit.user.js) |
 | [Wanikani Kanji Components](kanji-components/README.md) | Shows whole kanji used as visual components inside the current kanji. | WaniKani | `1.0.0` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/kanji-components/src/wanikani-kanji-components.user.js) |
 | [Wanikani Review Forecast Open Today](review-forecast-open-today/README.md) | Opens today's hourly Review Forecast schedule on the dashboard. | WaniKani | `0.3.3` | [Install](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/review-forecast-open-today/src/wanikani-review-forecast-open-today.user.js) |
@@ -16,8 +16,7 @@ progressive Japanese immersion, browser games, webtoon reading, and Salesforce.
 | [Webtoon Gap Trimmer](webtoon-gap-trimmer/README.md) | Shortens blank white bands inside chapter images. | MangaKakalot | `0.1.1` | [Install (beta)](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/webtoon-gap-trimmer/src/webtoon-gap-trimmer.user.js) |
 | [Salesforce Connection Popup Dismiss](salesforce-connection-popup/README.md) | Prevents App Builder's connection warning; dismisses matching fallback dialogs. | Salesforce Lightning and App Builder | `0.2.1` | [Install (beta)](https://raw.githubusercontent.com/EmerenSolutions/user-scripts/main/salesforce-connection-popup/src/salesforce-connection-popup.user.js) |
 
-Wanikani Review Reorder, Webtoon Gap Trimmer, and Salesforce Connection Popup
-Dismiss are beta releases. See each script’s README for supported behavior and
+Webtoon Gap Trimmer and Salesforce Connection Popup Dismiss are beta releases. See each script’s README for supported behavior and
 validation limits.
 
 ## Installation

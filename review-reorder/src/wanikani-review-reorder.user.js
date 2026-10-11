@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wanikani Review Reorder
 // @namespace    https://github.com/EmerenSolutions/user-scripts
-// @version      0.1.0
+// @version      1.0.0
 // @description  Random reviews grouped by radicals, kanji, and vocabulary, with meaning first and immediate retries
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -18,7 +18,7 @@
 (() => {
   'use strict';
 
-  // Installable build 1. WaniKani owns answer checking, retry statistics,
+  // Installable build 2. WaniKani owns answer checking, retry statistics,
   // completion requests, and wrap-up; this script only prepares the order.
   const SCRIPT_ID = 'wanikani_review_reorder';
   if (window[SCRIPT_ID]) return;

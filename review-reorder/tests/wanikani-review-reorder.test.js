@@ -159,11 +159,13 @@ for (const failure of ['http', 'missing', 'duplicate', 'unknown']) {
   });
 }
 
-for (const reason of ['answered', 'completed', 'wrapup', 'conflict', 'typed']) {
+for (const reason of ['answered', 'completed', 'stats', 'fetching', 'wrapup', 'conflict', 'typed']) {
   test(`does not reorder an unsafe session (${reason})`, async () => {
     const h = harness({conflict: reason === 'conflict'});
     if (reason === 'answered') h.emit('didAnswerQuestion');
     if (reason === 'completed') h.queue.totalItems += 1;
+    if (reason === 'stats') h.queue.stats.toJSON = () => [[3, {meaning: {incorrect: 1}}]];
+    if (reason === 'fetching') h.queue.fetchingMoreItems = true;
     if (reason === 'wrapup') h.queue.wrapUpManager.wrappingUp = true;
     if (reason === 'typed') h.responseInput.value = 'answer';
     await h.flush();
