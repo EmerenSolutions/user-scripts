@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wanikani Kanji Components
 // @namespace    https://github.com/EmerenSolutions/wanikani-userscripts
-// @version      0.1.16
+// @version      1.0.0
 // @description  Shows whole kanji used as visual components inside WaniKani kanji
 // @author       Johan Emerén
 // @copyright    2026, Johan Emerén
@@ -267,8 +267,13 @@
 
   let settings = { ...DEFAULT_SETTINGS };
   let settingsLoaded = false;
+  let settingsInitializing = true;
   let wkKanji = null;
+  let wkKanjiLoad = null;
   let latestCharacter = null;
+  let renderRevision = 0;
+  // undefined means no quiz event yet; null means a non-kanji question.
+  let questionCharacter;
   let observerTimer = null;
 
   const $ = selector => document.querySelector(selector);
@@ -276,6 +281,7 @@
   const isKanji = value => /^[\u3400-\u9fff]$/u.test(value);
 
   const removePanel = () => {
+    renderRevision++;
     $(`#${SCRIPT_ID}_panel`)?.remove();
     latestCharacter = null;
   };
@@ -290,31 +296,37 @@
 
   const loadWkKanji = async () => {
     if (wkKanji) return wkKanji;
+    if (wkKanjiLoad) return wkKanjiLoad;
 
-    if (!await readyWkof('ItemData')) {
-      return null;
-    }
-
-    wkKanji = new Set();
-    const items = await window.wkof.ItemData.get_items({
-      wk_items: {
-        filters: {
-          item_type: 'kan'
+    // Publish the cache only after the complete load, and share the pending
+    // promise so overlapping questions cannot see an empty partial set.
+    wkKanjiLoad = (async () => {
+      if (!await readyWkof('ItemData')) return null;
+      const allowed = new Set();
+      const items = await window.wkof.ItemData.get_items({
+        wk_items: {
+          filters: {
+            item_type: 'kan'
+          }
         }
-      }
-    });
+      });
 
-    for (const item of items) {
-      const data = item?.data || item;
-      const characters = data?.characters;
-      const type = item?.object || data?.object || item?.item_type || data?.item_type;
-
-      if (type === 'kanji' && isKanji(characters)) {
-        wkKanji.add(characters);
+      for (const item of items) {
+        const data = item?.data || item;
+        const characters = data?.characters;
+        const type = item?.object || data?.object || item?.item_type || data?.item_type;
+        if (type === 'kanji' && isKanji(characters)) allowed.add(characters);
       }
+      wkKanji = allowed;
+      return allowed;
+    })();
+
+    try {
+      return await wkKanjiLoad;
+    } finally {
+      // Missing WKOF and failed requests remain retryable.
+      wkKanjiLoad = null;
     }
-
-    return wkKanji;
   };
 
   const isKanjiPage = () =>
@@ -380,6 +392,7 @@
   // visited set through the recursion so every kanji appears at most once.
   const getNestedComponents = (character, seen = new Set()) => {
     const result = [];
+    seen.add(character);
 
     for (const component of getDirectComponents(character)) {
       if (seen.has(component.kanji)) continue;
@@ -421,16 +434,17 @@
     const detail = event?.detail;
     const subject = detail?.subject || detail;
     const data = subject?.data || subject?.subject || subject;
-    const type = subject?.object || data?.object || subject?.item_type || data?.item_type;
+    const type = subject?.subject_category || data?.subject_category
+      || subject?.object || data?.object || subject?.item_type || data?.item_type;
     const characters = data?.characters || subject?.characters;
 
-    if (type === 'kanji' && isKanji(characters)) return characters;
+    if (typeof type === 'string' && type.toLowerCase() === 'kanji' && isKanji(characters)) return characters;
     return null;
   };
 
   // WaniKani uses different markup in subjects, reviews, and lessons. Prefer
   // the largest visible candidate so navigation text is not mistaken for the
-  // active quiz subject, then retain a hidden-element fallback for transitions.
+  // active quiz subject. Hidden transition markup is not a current subject.
   const getSubjectFromPage = () => {
     const pathMatch = decodeURIComponent(location.pathname).match(/(?:\/kanji\/|\/subjects\/kanji\/)([^/?#]+)/u);
     if (pathMatch?.[1] && isKanji(pathMatch[1])) return pathMatch[1];
@@ -467,12 +481,6 @@
 
     candidates.sort((a, b) => b.area - a.area || a.top - b.top);
     if (candidates.length) return candidates[0].text;
-
-    for (const selector of selectors) {
-      const element = $(selector);
-      const text = element?.dataset?.subjectCharacter || element?.textContent?.trim();
-      if (isKanji(text)) return text;
-    }
 
     return null;
   };
@@ -636,18 +644,28 @@
   };
 
   const render = async character => {
-    if (!character || !isKanji(character)) return;
-    if (!shouldRunOnCurrentPage()) {
+    if (settingsInitializing || !character || !isKanji(character) || !shouldRunOnCurrentPage()) {
       removePanel();
       return;
     }
 
     if (character === latestCharacter && $(`#${SCRIPT_ID}_panel`)) return;
 
+    removePanel();
     latestCharacter = character;
+    const revision = renderRevision;
+    const pathname = location.pathname;
     installStyles();
 
-    const allowed = await loadWkKanji();
+    let allowed = null;
+    let loadFailed = false;
+    try {
+      allowed = await loadWkKanji();
+    } catch (error) {
+      loadFailed = true;
+      console.warn('Wanikani Kanji Components: kanji could not be loaded.', error);
+    }
+    if (revision !== renderRevision || pathname !== location.pathname || !shouldRunOnCurrentPage()) return;
     const direct = allowed ? getDisplayDirectComponents(character, allowed) : [];
     const nested = allowed
       ? filterToWkKanji(getNestedComponents(character), allowed)
@@ -673,7 +691,9 @@
     if (!allowed) {
       const note = document.createElement('p');
       note.className = `${SCRIPT_ID}__note`;
-      note.textContent = 'Wanikani Open Framework is required to filter components to WaniKani kanji.';
+      note.textContent = loadFailed
+        ? 'WaniKani kanji could not be loaded. Try reloading the page.'
+        : 'Wanikani Open Framework is required to filter components to WaniKani kanji.';
       panel.appendChild(note);
     }
 
@@ -687,8 +707,10 @@
       return;
     }
 
-    const character = getSubjectFromPage();
-    if (character) render(character);
+    const character = (isReviewPage() || isLessonPage()) && questionCharacter !== undefined
+      ? questionCharacter
+      : getSubjectFromPage();
+    render(character);
   };
 
   const loadSettings = async () => {
@@ -701,6 +723,7 @@
     };
 
     settingsLoaded = true;
+    removePanel();
     scheduleMenuInstall();
   };
 
@@ -824,22 +847,45 @@
   };
 
   const startup = async () => {
-    await loadSettings();
-    document.addEventListener('turbo:load', () => {
+    const onNavigation = () => {
+      questionCharacter = undefined;
+      removePanel();
       scheduleMenuInstall();
       renderCurrentPage();
+    };
+    // Listen before awaiting WKOF so transitions during initialization also
+    // invalidate pending work and reset the event-based subject.
+    document.addEventListener('turbo:before-render', () => {
+      questionCharacter = undefined;
+      removePanel();
     });
-    document.addEventListener('turbo:render', () => {
-      scheduleMenuInstall();
-      renderCurrentPage();
+    document.addEventListener('turbo:load', onNavigation);
+    document.addEventListener('turbo:render', onNavigation);
+    window.addEventListener('popstate', () => {
+      questionCharacter = undefined;
+      removePanel();
+      window.setTimeout(renderCurrentPage, 50);
     });
-    window.addEventListener('popstate', () => window.setTimeout(renderCurrentPage, 50));
+    const tryLoadSettings = async () => {
+      try {
+        await loadSettings();
+      } catch (error) {
+        console.warn('Wanikani Kanji Components: settings could not be loaded.', error);
+      }
+    };
+    await tryLoadSettings();
+    settingsInitializing = false;
     renderCurrentPage();
-    [500, 1500, 3000].forEach(delay => window.setTimeout(renderCurrentPage, delay));
+    [500, 1500, 3000].forEach(delay => window.setTimeout(() => {
+      // Retry unavailable data on these bounded startup checks, rather than
+      // on every mutation caused by our own requirement/error panel.
+      if (!wkKanji) removePanel();
+      renderCurrentPage();
+    }, delay));
     [500, 1500, 3000].forEach(delay => {
       window.setTimeout(async () => {
         if (!settingsLoaded) {
-          await loadSettings();
+          await tryLoadSettings();
           renderCurrentPage();
         }
       }, delay);
@@ -854,15 +900,19 @@
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['data-subject-character', 'class', 'style', 'hidden']
     });
   };
 
   window.addEventListener('willShowNextQuestion', event => {
-    if (!settings.enabled || (!settings.runReviews && !settings.runLessons)) return;
-
-    const character = getSubjectFromEvent(event);
-    if (character) render(character);
+    if (!isReviewPage() && !isLessonPage()) return;
+    // The event precedes DOM replacement. Keep it authoritative for this quiz
+    // until another question event or navigation, including non-kanji subjects.
+    questionCharacter = getSubjectFromEvent(event);
+    render(questionCharacter);
   });
 
   startup();
